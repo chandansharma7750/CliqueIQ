@@ -55,9 +55,22 @@ export default function CaptionsPage() {
   const handleGenerate = async () => {
     if (!topic) return
     setLoading(true)
-    // Simulate AI generation
-    await new Promise((r) => setTimeout(r, 1500))
-    setVariations(exampleOutputs[tone])
+    try {
+      const res = await fetch("/api/captions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, tone, platform }),
+      })
+      const data = await res.json()
+      if (data.captions && Array.isArray(data.captions)) {
+        setVariations(data.captions)
+      } else {
+        // fallback to examples if API fails
+        setVariations(exampleOutputs[tone])
+      }
+    } catch {
+      setVariations(exampleOutputs[tone])
+    }
     setLoading(false)
   }
 
@@ -79,7 +92,7 @@ export default function CaptionsPage() {
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Generate Captions</CardTitle>
-            <CardDescription>Powered by GPT-4o</CardDescription>
+            <CardDescription>Powered by Gemini 1.5 Flash ✨</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
