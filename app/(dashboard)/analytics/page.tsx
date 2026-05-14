@@ -240,8 +240,8 @@ export default function AnalyticsPage() {
                 />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
-                  formatter={(val: number, name: string) => [
-                    formatNum(val),
+                  formatter={(val, name) => [
+                    formatNum(Number(val) || 0),
                     name === "reach" ? "Reach" : "Engagement",
                   ]}
                   labelFormatter={(label) => formatDate(label)}
@@ -283,7 +283,7 @@ export default function AnalyticsPage() {
                 />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
-                  formatter={(val: number) => [val, "New Followers"]}
+                  formatter={(val) => [Number(val) || 0, "New Followers"]}
                   labelFormatter={(label) => formatDate(label)}
                 />
                 <Line
