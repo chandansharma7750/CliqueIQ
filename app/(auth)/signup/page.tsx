@@ -4,10 +4,9 @@ import { useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Zap, CheckCircle2, Mail } from "lucide-react"
+import { Zap, CheckCircle2 } from "lucide-react"
 import { FcGoogle } from "react-icons/fc"
+import { FaFacebook } from "react-icons/fa"
 
 const perks = [
   "14-day free trial, no credit card required",
@@ -17,10 +16,8 @@ const perks = [
 ]
 
 export default function SignupPage() {
-  const [email, setEmail] = useState("")
-  const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [facebookLoading, setFacebookLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const supabase = createClient()
@@ -40,22 +37,19 @@ export default function SignupPage() {
     }
   }
 
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+  const handleFacebookSignup = async () => {
+    setFacebookLoading(true)
     setError(null)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "facebook",
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
     if (error) {
       setError(error.message)
-    } else {
-      setSent(true)
+      setFacebookLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -98,62 +92,29 @@ export default function SignupPage() {
             <p className="mt-1 text-sm text-slate-500">Free for 14 days. No credit card.</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm space-y-3">
+            {error && (
+              <p className="text-xs text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>
+            )}
+
             <Button
               variant="outline"
-              className="w-full gap-3 h-11"
+              className="w-full gap-3 h-12 text-sm font-medium"
               onClick={handleGoogleSignup}
-              disabled={googleLoading}
+              disabled={googleLoading || facebookLoading}
             >
               <FcGoogle className="h-5 w-5" />
               {googleLoading ? "Redirecting…" : "Sign up with Google"}
             </Button>
 
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-white px-2 text-slate-400">ya email se signup karo</span>
-              </div>
-            </div>
-
-            {sent ? (
-              <div className="text-center py-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 mx-auto mb-3">
-                  <Mail className="h-5 w-5 text-violet-600" />
-                </div>
-                <p className="text-sm font-semibold text-slate-900">Email bhej diya!</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  <strong>{email}</strong> pe magic link gaya hai
-                </p>
-                <button onClick={() => setSent(false)} className="mt-3 text-xs text-violet-600 hover:underline">
-                  Wapas jao
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleMagicLink} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@agency.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="mt-1"
-                    autoFocus
-                  />
-                </div>
-                {error && (
-                  <p className="text-xs text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>
-                )}
-                <Button type="submit" variant="gradient" className="w-full h-11" disabled={loading || !email}>
-                  {loading ? "Sending…" : "Get started for free ✨"}
-                </Button>
-              </form>
-            )}
+            <Button
+              className="w-full gap-3 h-12 text-sm font-medium bg-[#1877F2] hover:bg-[#166FE5] text-white"
+              onClick={handleFacebookSignup}
+              disabled={googleLoading || facebookLoading}
+            >
+              <FaFacebook className="h-5 w-5" />
+              {facebookLoading ? "Redirecting…" : "Sign up with Facebook"}
+            </Button>
           </div>
 
           <p className="mt-4 text-center text-xs text-slate-500">
