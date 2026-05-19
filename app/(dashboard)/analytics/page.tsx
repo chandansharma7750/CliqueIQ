@@ -220,22 +220,22 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* YouTube-only info banner */}
-      {data && data.youtubeOnly && (
+      {/* YouTube-only info banner — only shown when daily data is unavailable */}
+      {data && data.youtubeOnly && !data.daily.some(d => d.reach > 0) && (
         <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
           <FaYoutube className="h-5 w-5 text-red-600 flex-shrink-0" />
           <p className="text-sm text-blue-700">
-            YouTube channel stats shown above are live. Daily reach/engagement charts require Instagram or Facebook to be connected.
+            YouTube channel stats shown above are live. Connect Instagram or Facebook to see daily reach/engagement charts.
           </p>
         </div>
       )}
 
       {/* Reach & Engagement Chart */}
-      {data && !data.youtubeOnly && (
+      {data && (!data.youtubeOnly || data.daily.some(d => d.reach > 0)) && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Reach & Engagement Over Time</CardTitle>
-            <CardDescription>Daily performance across all connected platforms</CardDescription>
+            <CardTitle className="text-base">{data.youtubeOnly ? "Views & Engagement Over Time" : "Reach & Engagement Over Time"}</CardTitle>
+            <CardDescription>{data.youtubeOnly ? "Daily YouTube views and engagement (likes + comments)" : "Daily performance across all connected platforms"}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
@@ -268,12 +268,12 @@ export default function AnalyticsPage() {
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
                   formatter={(val, name) => [
                     formatNum(Number(val) || 0),
-                    name === "reach" ? "Reach" : "Engagement",
+                    name === "reach" ? (data.youtubeOnly ? "Views" : "Reach") : "Engagement",
                   ]}
                   labelFormatter={(label) => formatDate(label)}
                 />
                 <Legend
-                  formatter={(val) => val === "reach" ? "Reach" : "Engagement"}
+                  formatter={(val) => val === "reach" ? (data.youtubeOnly ? "Views" : "Reach") : "Engagement"}
                   wrapperStyle={{ fontSize: 12 }}
                 />
                 <Area type="monotone" dataKey="reach" stroke="#8b5cf6" strokeWidth={2} fill="url(#reachGrad)" dot={false} />
@@ -285,7 +285,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* Follower Growth Chart */}
-      {data && !data.youtubeOnly && (
+      {data && (!data.youtubeOnly || data.daily.some(d => d.reach > 0)) && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Follower Growth</CardTitle>

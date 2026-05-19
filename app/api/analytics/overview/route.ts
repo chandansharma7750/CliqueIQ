@@ -67,11 +67,46 @@ async function fetchYouTubeStats(accessToken: string, savedMetadata: Record<stri
       return { subscriber_count: Number(stats.subscriberCount) || 0, video_count: Number(stats.videoCount) || 0, view_count: Number(stats.viewCount) || 0 }
     }
   } catch { /* fall through to saved metadata */ }
-  // Fall back to saved metadata from OAuth callback
   if (savedMetadata) {
     return { subscriber_count: Number(savedMetadata.subscriber_count) || 0, video_count: Number(savedMetadata.video_count) || 0, view_count: Number(savedMetadata.view_count) || 0 }
   }
   return null
+}
+
+// Fetch daily YouTube Analytics (views, likes, comments per day) — FREE for channel owner
+async function fetchYouTubeAnalytics(accessToken: string, days: number) {
+  try {
+    const endDate = new Date().toISOString().split("T")[0]
+    const startDate = new Date(Date.now() - days * 86400000).toISOString().split("T")[0]
+
+    const res = await fetch(
+      `https://youtubeanalytics.googleapis.com/v2/reports?` +
+      `ids=channel==MINE` +
+      `&startDate=${startDate}` +
+      `&endDate=${endDate}` +
+      `&metrics=views,likes,comments,estimatedMinutesWatched,subscribersGained` +
+      `&dimensions=day` +
+      `&sort=day`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    )
+
+    const data = await res.json()
+    if (data.error || !data.rows) return null
+
+    // data.rows = [[date, views, likes, comments, watchTime, subsGained], ...]
+    const daily = data.rows.map((row: (string | number)[]) => ({
+      date: String(row[0]),
+      reach: Number(row[1]) || 0,        // views
+      impressions: Number(row[1]) || 0,
+      engagement: (Number(row[2]) || 0) + (Number(row[3]) || 0), // likes + comments
+      followers_gained: Number(row[5]) || 0, // subscribers gained
+      watch_minutes: Number(row[4]) || 0,
+    }))
+
+    return daily
+  } catch {
+    return null
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -130,23 +165,39 @@ export async function GET(req: NextRequest) {
 
   if (!hasInstagram && ytRow?.extra) {
     const yt = ytRow.extra as { subscriber_count: number; video_count: number; view_count: number }
-    // Build a flat daily array showing 0s (no daily YouTube analytics without paid API)
-    const now = new Date()
-    const daily = Array.from({ length: days }, (_, i) => {
-      const date = new Date(now)
-      date.setDate(date.getDate() - (days - 1 - i))
-      return { date: date.toISOString().split("T")[0], reach: 0, impressions: 0, engagement: 0, followers_gained: 0 }
-    })
+
+    // Try real YouTube Analytics daily data (free for channel owners)
+    let daily: { date: string; reach: number; impressions: number; engagement: number; followers_gained: number; watch_minutes?: number }[] | null = null
+    if (ytAccount?.access_token) {
+      daily = await fetchYouTubeAnalytics(ytAccount.access_token, days)
+    }
+
+    // Fall back to zero-filled array if Analytics API fails
+    if (!daily || daily.length === 0) {
+      const now = new Date()
+      daily = Array.from({ length: days }, (_, i) => {
+        const date = new Date(now)
+        date.setDate(date.getDate() - (days - 1 - i))
+        return { date: date.toISOString().split("T")[0], reach: 0, impressions: 0, engagement: 0, followers_gained: 0 }
+      })
+    }
+
+    // Compute summary from real daily data if available, else use channel totals
+    const hasDailyData = daily.some(d => d.reach > 0)
+    const periodViews = hasDailyData ? daily.reduce((s, d) => s + d.reach, 0) : yt.view_count
+    const periodEngagement = hasDailyData ? daily.reduce((s, d) => s + d.engagement, 0) : 0
+    const periodSubsGained = hasDailyData ? daily.reduce((s, d) => s + d.followers_gained, 0) : yt.subscriber_count
+
     return NextResponse.json({
       isDemo: false,
       youtubeOnly: true,
       summary: {
-        reach: yt.view_count,           // Total Views
-        impressions: yt.view_count,
-        engagement: 0,
-        engagement_rate: 0,
-        followers_gained: yt.subscriber_count,  // Subscribers
-        posts_published: yt.video_count,         // Videos
+        reach: periodViews,
+        impressions: periodViews,
+        engagement: periodEngagement,
+        engagement_rate: periodViews > 0 ? parseFloat(((periodEngagement / periodViews) * 100).toFixed(2)) : 0,
+        followers_gained: periodSubsGained,
+        posts_published: yt.video_count,
       },
       daily,
       platforms: platformRows,
