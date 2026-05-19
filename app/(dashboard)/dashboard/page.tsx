@@ -71,10 +71,17 @@ export default async function DashboardPage() {
     .eq("id", user!.id)
     .single()
 
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", user!.id)
+    .single()
+
   const { data: socialAccounts } = await supabase
     .from("social_accounts")
     .select("*")
-    .eq("workspace_id", profile?.id ?? "")
+    .eq("workspace_id", workspace?.id ?? "")
+    .eq("is_active", true)
     .limit(10)
 
   const greeting = () => {
