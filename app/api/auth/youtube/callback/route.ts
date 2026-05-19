@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/youtube/callback`
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL!
-
 export async function GET(req: NextRequest) {
+  const APP_URL =
+    process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host")}`
+  const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
+  const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
+  const REDIRECT_URI = `${APP_URL}/api/auth/youtube/callback`
+
   const { searchParams } = new URL(req.url)
   const code = searchParams.get("code")
   const error = searchParams.get("error")
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
 
     const tokens = await tokenRes.json()
     if (!tokens.access_token) {
+      console.error("YouTube token exchange failed:", tokens)
       return NextResponse.redirect(`${APP_URL}/connect?error=youtube_token_failed`)
     }
 
@@ -43,10 +45,11 @@ export async function GET(req: NextRequest) {
     const channel = channelData.items?.[0]
 
     if (!channel) {
+      console.error("No YouTube channel found:", channelData)
       return NextResponse.redirect(`${APP_URL}/connect?error=no_youtube_channel`)
     }
 
-    // Save to social_accounts
+    // Get user + workspace
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.redirect(`${APP_URL}/login`)
@@ -57,26 +60,40 @@ export async function GET(req: NextRequest) {
       .eq("owner_id", user.id)
       .single()
 
-    if (workspace) {
-      await supabase.from("social_accounts").upsert({
-        workspace_id: workspace.id,
-        platform: "youtube",
-        account_id: channel.id,
-        account_name: channel.snippet.title,
-        account_handle: channel.snippet.customUrl || channel.id,
-        avatar_url: channel.snippet.thumbnails?.default?.url,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        token_expires_at: tokens.expires_in
-          ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-          : null,
-        is_active: true,
-        metadata: {
-          subscriber_count: channel.statistics?.subscriberCount,
-          video_count: channel.statistics?.videoCount,
-          view_count: channel.statistics?.viewCount,
+    if (!workspace) {
+      console.error("No workspace for user:", user.id)
+      return NextResponse.redirect(`${APP_URL}/connect?error=youtube_failed`)
+    }
+
+    // Upsert to social_accounts — conflict on (workspace_id, platform)
+    const { error: upsertError } = await supabase
+      .from("social_accounts")
+      .upsert(
+        {
+          workspace_id: workspace.id,
+          platform: "youtube",
+          account_id: channel.id,
+          account_name: channel.snippet.title,
+          account_handle: channel.snippet.customUrl || channel.id,
+          avatar_url: channel.snippet.thumbnails?.default?.url || null,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token || null,
+          token_expires_at: tokens.expires_in
+            ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+            : null,
+          is_active: true,
+          metadata: {
+            subscriber_count: channel.statistics?.subscriberCount || 0,
+            video_count: channel.statistics?.videoCount || 0,
+            view_count: channel.statistics?.viewCount || 0,
+          },
         },
-      }, { onConflict: "workspace_id,platform" })
+        { onConflict: "workspace_id,platform" }
+      )
+
+    if (upsertError) {
+      console.error("Supabase upsert error:", upsertError)
+      return NextResponse.redirect(`${APP_URL}/connect?error=youtube_save_failed`)
     }
 
     return NextResponse.redirect(`${APP_URL}/connect?success=youtube`)
