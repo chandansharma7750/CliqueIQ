@@ -7,35 +7,57 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Eye, Heart, Users, TrendingUp, Link2, Info, ExternalLink } from "lucide-react"
+import { FaInstagram, FaFacebook, FaYoutube } from "react-icons/fa"
 import Link from "next/link"
-
-// ─── Palette ─────────────────────────────────────────────────────────────────
-const C = {
-  bg:  "#05070f",
-  s1:  "#0a0d1a",
-  s2:  "#0f1224",
-  s3:  "#141828",
-  b1:  "rgba(255,255,255,0.06)",
-  b2:  "rgba(255,255,255,0.11)",
-  tx:  "#dde1f0",
-  tx2: "#8892b0",
-  mu:  "#4a5170",
-  ac:  "#6c63ff",
-  ac2: "#00d4ff",
-  gr:  "#00e5a0",
-  rd:  "#ff4d6d",
-  yt:  "#ff2244",
-  ig:  "#f7187c",
-  li:  "#0a7bba",
-  fb:  "#2d7cf5",
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Range = "7d" | "30d" | "90d"
-interface DailyRow { date: string; reach: number; impressions: number; engagement: number; followers_gained: number }
-interface PlatRow  { platform: string; account_name: string; followers: number; reach: number; engagement_rate: number; posts: number; extra?: { subscriber_count: number; video_count: number; view_count: number } }
-interface TopPost  { id: string; platform: string; caption: string; reach: number; engagement: number; likes: number; comments: number; published_at: string }
-interface AnalData { isDemo: boolean; youtubeOnly?: boolean; summary: { reach: number; impressions: number; engagement: number; engagement_rate: number; followers_gained: number; posts_published: number }; daily: DailyRow[]; platforms: PlatRow[]; top_posts: TopPost[] }
+
+interface DailyRow {
+  date: string
+  reach: number
+  impressions: number
+  engagement: number
+  followers_gained: number
+}
+interface PlatRow {
+  platform: string
+  account_name: string
+  followers: number
+  reach: number
+  engagement_rate: number
+  posts: number
+  extra?: { subscriber_count: number; video_count: number; view_count: number }
+}
+interface TopPost {
+  id: string
+  platform: string
+  caption: string
+  reach: number
+  engagement: number
+  likes: number
+  comments: number
+  published_at: string
+}
+interface AnalData {
+  isDemo: boolean
+  youtubeOnly?: boolean
+  summary: {
+    reach: number
+    impressions: number
+    engagement: number
+    engagement_rate: number
+    followers_gained: number
+    posts_published: number
+  }
+  daily: DailyRow[]
+  platforms: PlatRow[]
+  top_posts: TopPost[]
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fN(n: number): string {
@@ -47,146 +69,56 @@ function fN(n: number): string {
 function fD(s: string): string {
   return new Date(s).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
 }
-function ptCol(p: string) {
-  return p === "instagram" ? C.ig : p === "facebook" ? C.fb : p === "youtube" ? C.yt : p === "linkedin" ? C.li : C.ac
+function ptColor(p: string): string {
+  return p === "instagram" ? "#f7187c" : p === "facebook" ? "#2d7cf5" : p === "youtube" ? "#ff2244" : p === "linkedin" ? "#0a7bba" : "#7c3aed"
 }
-function ptIco(p: string): string {
-  return p === "instagram" ? "📸" : p === "facebook" ? "f" : p === "youtube" ? "▶" : p === "linkedin" ? "in" : "●"
+function ptBg(p: string): string {
+  return p === "instagram" ? "bg-pink-50 text-pink-600" : p === "facebook" ? "bg-blue-50 text-blue-600" : p === "youtube" ? "bg-red-50 text-red-600" : "bg-violet-50 text-violet-600"
 }
 
-// ─── Static Demo Data ─────────────────────────────────────────────────────────
-const HMAP = [.1,.08,.07,.06,.07,.09,.11,.16,.26,.36,.42,.46,.5,.47,.44,.5,.56,.66,.82,.92,.85,.68,.48,.28]
+const PlatformIcon = ({ platform, className = "h-4 w-4" }: { platform: string; className?: string }) => {
+  if (platform === "instagram") return <FaInstagram className={className} style={{ color: "#f7187c" }} />
+  if (platform === "facebook")  return <FaFacebook  className={className} style={{ color: "#2d7cf5" }} />
+  if (platform === "youtube")   return <FaYoutube   className={className} style={{ color: "#ff2244" }} />
+  return null
+}
+
+// ─── Heatmap (demo) ───────────────────────────────────────────────────────────
+const HMAP  = [.1,.08,.07,.06,.07,.09,.11,.16,.26,.36,.42,.46,.5,.47,.44,.5,.56,.66,.82,.92,.85,.68,.48,.28]
 const WEEK  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
 const DAYW  = [1,1,1,1,1,1.3,1.2]
 
-const SPARK: number[][] = [
-  [80,85,78,92,88,95,100,98,105,112,118],
-  [60,70,65,80,75,90,85,95,100,110,120],
-  [50,55,52,60,58,55,62,60,58,65,70],
-  [30,45,40,55,50,65,60,75,70,85,90],
-  [12,15,10,18,14,16,20,17,22,19,23],
-]
-
-const RADAR_DATA = [
-  { m:"Engagement", you:87, avg:72 },
-  { m:"Reach",      you:74, avg:80 },
-  { m:"Consistency",you:80, avg:74 },
-  { m:"Content",    you:92, avg:70 },
-  { m:"Growth",     you:78, avg:65 },
-  { m:"Response",   you:70, avg:80 },
-]
-
-const COMPS = [
-  { name:"You",              handle:"@yourbrand",     eng:4.67, col:C.ac,  isYou:true  },
-  { name:"Competitor Beta",  handle:"@betacreatives", eng:5.21, col:C.ac2, isYou:false },
-  { name:"Competitor Alpha", handle:"@alphabrands",   eng:3.89, col:C.yt,  isYou:false },
-  { name:"Competitor Gamma", handle:"@gammadigital",  eng:3.12, col:C.ig,  isYou:false },
-]
-
-const ALERTS = [
-  { icon:"🚀", title:"Engagement Spike",  body:"Tuesday posts get 3.2× avg engagement. Post Tue–Wed 7–9 PM for max reach.", action:"Create post →",      col:C.gr  },
-  { icon:"⚠️", title:"Reach Declining",   body:"Reach dropped 18% this week. Refresh content formats and A/B test thumbnails.", action:"View tips →",  col:C.rd  },
-  { icon:"💡", title:"Posting Gap",       body:"No posts in 12 days. Accounts posting 4×/week see 40% more profile visits.", action:"Open Scheduler →", col:C.ac  },
-  { icon:"🎉", title:"AI Insight",        body:"Reels outperform static posts by 3.4×. Reallocate 20% budget to short-form video.", action:"Full Analysis →", col:C.ac2 },
-]
-
-const ROI = [
-  { icon:"💰", val:"₹4.2L",  lbl:"Est. Earned Media Value" },
-  { icon:"🎯", val:"312%",   lbl:"Social Media ROI"        },
-  { icon:"📣", val:"₹0.82",  lbl:"Cost Per Engagement"     },
-  { icon:"🏆", val:"94/100", lbl:"Brand Health Score"      },
-]
-
-// ─── Sparkline ────────────────────────────────────────────────────────────────
-function Spark({ data, color }: { data: number[]; color: string }) {
-  return (
-    <div style={{ position:"absolute", bottom:12, right:12, opacity:.35, pointerEvents:"none" }}>
-      <ResponsiveContainer width={80} height={28}>
-        <LineChart data={data.map((v,i)=>({v,i}))}>
-          <Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.8} dot={false} />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
-
-// ─── KPI Card ─────────────────────────────────────────────────────────────────
-function KpiCard({ label, value, sub, trend, up, color, spark, delay=0 }: {
-  label:string; value:string; sub:string; trend:string; up:boolean; color:string; spark:number[]; delay?:number
-}) {
-  const [hov, setHov] = useState(false)
-  return (
-    <div style={{
-      background:C.s1, border:`1px solid ${C.b1}`, borderRadius:14, padding:"19px",
-      position:"relative", overflow:"hidden", cursor:"pointer",
-      animation:`fadeUp .4s ease ${delay}s both`,
-      transform:hov?"translateY(-2px)":"", transition:"transform .2s",
-    }}
-    onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}>
-      <div style={{ position:"absolute", top:0, left:18, right:18, height:2, background:color, borderRadius:"0 0 2px 2px" }} />
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:12 }}>
-        <div />
-        <span style={{
-          display:"inline-flex", alignItems:"center", gap:3, fontSize:11, fontWeight:600,
-          padding:"3px 7px", borderRadius:20,
-          background:up?"rgba(0,229,160,.12)":"rgba(255,77,109,.12)",
-          color:up?C.gr:C.rd,
-        }}>{up?"▲":"▼"} {trend}</span>
-      </div>
-      <div style={{ fontFamily:"Syne,var(--font-heading,sans-serif)", fontSize:26, fontWeight:800, letterSpacing:-1, lineHeight:1, color:"#fff" }}>{value}</div>
-      <div style={{ fontSize:11, color:C.mu, marginTop:5, textTransform:"uppercase", letterSpacing:.4, fontWeight:500 }}>{label}</div>
-      <div style={{ fontSize:11, color:C.tx2, marginTop:5 }}>{sub}</div>
-      <Spark data={spark} color={color} />
-    </div>
-  )
-}
-
-// ─── ROI Card ─────────────────────────────────────────────────────────────────
-function RoiCard({ icon, val, lbl, delay=0 }: { icon:string; val:string; lbl:string; delay?:number }) {
-  const [hov, setHov] = useState(false)
-  return (
-    <div style={{
-      background:C.s1, border:`1px solid ${C.b1}`, borderRadius:13, padding:17,
-      textAlign:"center", cursor:"pointer",
-      animation:`fadeUp .45s ease ${delay}s both`,
-      transform:hov?"translateY(-2px)":"", transition:"transform .2s",
-    }}
-    onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}>
-      <div style={{ fontSize:22, marginBottom:7 }}>{icon}</div>
-      <div style={{ fontFamily:"Syne,sans-serif", fontSize:22, fontWeight:800, color:"#fff" }}>{val}</div>
-      <div style={{ fontSize:11, color:C.mu, marginTop:3 }}>{lbl}</div>
-    </div>
-  )
-}
-
-// ─── Heatmap ──────────────────────────────────────────────────────────────────
 function HeatmapViz() {
   return (
     <div>
-      <div style={{ display:"flex", paddingLeft:42, gap:2, marginBottom:4 }}>
-        {Array.from({length:24},(_,h)=>(
-          <div key={h} style={{ flex:1, fontSize:9, color:C.mu, textAlign:"center" }}>{h%6===0?`${h}h`:""}</div>
+      <div className="flex pl-10 gap-px mb-1">
+        {Array.from({ length: 24 }, (_, h) => (
+          <div key={h} className="flex-1 text-[9px] text-slate-400 text-center">
+            {h % 6 === 0 ? `${h}h` : ""}
+          </div>
         ))}
       </div>
-      {WEEK.map((day,di)=>(
-        <div key={day} style={{ display:"flex", alignItems:"center", gap:2, marginBottom:2 }}>
-          <div style={{ width:38, fontSize:10, color:C.mu, textAlign:"right", paddingRight:6, flexShrink:0 }}>{day}</div>
-          {HMAP.map((base,h)=>{
-            const val = Math.min(1, base * DAYW[di] * (0.75 + ((h*di+17)%9)/18))
-            const alpha = 0.07 + val * 0.87
+      {WEEK.map((day, di) => (
+        <div key={day} className="flex items-center gap-px mb-0.5">
+          <div className="w-9 text-[10px] text-slate-400 text-right pr-1.5 shrink-0">{day}</div>
+          {HMAP.map((base, h) => {
+            const val   = Math.min(1, base * DAYW[di] * (0.75 + ((h * di + 17) % 9) / 18))
+            const alpha = Math.round((0.07 + val * 0.87) * 100)
             return (
-              <div key={h} title={`${day} ${h}:00 · Score: ${Math.round(val*100)}%`}
-                style={{ flex:1, height:15, borderRadius:3, cursor:"pointer", background:`rgba(108,99,255,${alpha})`, transition:"transform .15s" }}
-                onMouseEnter={e=>(e.currentTarget.style.transform="scale(1.5)")}
-                onMouseLeave={e=>(e.currentTarget.style.transform="")} />
+              <div
+                key={h}
+                title={`${day} ${h}:00 · Score: ${Math.round(val * 100)}%`}
+                className="flex-1 h-3.5 rounded-sm cursor-pointer transition-transform hover:scale-150"
+                style={{ background: `rgba(124,58,237,${alpha / 100})` }}
+              />
             )
           })}
         </div>
       ))}
-      <div style={{ display:"flex", alignItems:"center", gap:7, marginTop:10, fontSize:10, color:C.mu }}>
+      <div className="flex items-center gap-1.5 mt-2 text-[10px] text-slate-400">
         Low
-        {[.08,.25,.45,.65,.87].map((v,i)=>(
-          <div key={i} style={{ width:18, height:7, borderRadius:2, background:`rgba(108,99,255,${v})` }} />
+        {[0.08, 0.25, 0.45, 0.65, 0.87].map((v, i) => (
+          <div key={i} className="w-4 h-1.5 rounded-sm" style={{ background: `rgba(124,58,237,${v})` }} />
         ))}
         High
       </div>
@@ -196,492 +128,488 @@ function HeatmapViz() {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AnalyticsPage() {
-  const [range, setRange] = useState<Range>("30d")
-  const [data, setData]   = useState<AnalData|null>(null)
+  const [range, setRange]     = useState<Range>("30d")
+  const [data, setData]       = useState<AnalData | null>(null)
   const [loading, setLoading] = useState(true)
   const [activePt, setActivePt] = useState("all")
-  const [hideBanner, setHideBanner] = useState(false)
 
-  useEffect(()=>{
+  useEffect(() => {
     setLoading(true)
     fetch(`/api/analytics/overview?range=${range}`)
-      .then(r=>r.json())
-      .then(d=>{ setData(d); setLoading(false) })
-      .catch(()=>setLoading(false))
-  },[range])
+      .then(r => r.json())
+      .then(d => { setData(d); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [range])
 
-  const days = range==="7d"?7:range==="90d"?90:30
-
-  const chartRows = data?.daily?.map(d=>({
-    date:fD(d.date), reach:d.reach, eng:d.engagement, fol:d.followers_gained,
-  })) || []
-
-  const totalFol = data?.platforms?.reduce((s,p)=>s+p.followers,0) || 0
-  const donut    = (data?.platforms||[]).map(p=>({ name:p.platform, value:p.followers, color:ptCol(p.platform) }))
+  const days      = range === "7d" ? 7 : range === "90d" ? 90 : 30
+  const totalFol  = data?.platforms?.reduce((s, p) => s + p.followers, 0) || 0
+  const chartRows = data?.daily?.map(d => ({ date: fD(d.date), reach: d.reach, eng: d.engagement, fol: d.followers_gained })) || []
+  const donut     = (data?.platforms || []).map(p => ({ name: p.platform, value: p.followers, color: ptColor(p.platform) }))
 
   const TABS = [
-    { id:"all",       label:"All Platforms", icon:"⚡", sub:String(data?.platforms?.length||0) },
-    { id:"youtube",   label:"YouTube",       icon:"▶" },
-    { id:"instagram", label:"Instagram",     icon:"📸" },
-    { id:"facebook",  label:"Facebook",      icon:"f" },
+    { id: "all",       label: "All Platforms", icon: null },
+    { id: "youtube",   label: "YouTube",       icon: <FaYoutube   className="h-3.5 w-3.5" style={{ color: "#ff2244" }} /> },
+    { id: "instagram", label: "Instagram",     icon: <FaInstagram className="h-3.5 w-3.5" style={{ color: "#f7187c" }} /> },
+    { id: "facebook",  label: "Facebook",      icon: <FaFacebook  className="h-3.5 w-3.5" style={{ color: "#2d7cf5" }} /> },
   ]
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <div style={{
-      background:C.bg, margin:"-24px", padding:"24px 28px",
-      color:C.tx, minHeight:"calc(100vh - 64px)",
-    }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&display=swap');
-        @keyframes fadeUp { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
-        @keyframes blink  { 0%,100%{opacity:1}50%{opacity:.45} }
-        .an-grid-5 { display:grid; grid-template-columns:repeat(5,1fr); gap:13px; }
-        .an-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:13px; }
-        .an-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr;   gap:17px; }
-        .an-grid-2 { display:grid; grid-template-columns:1fr 1fr;       gap:17px; }
-        .an-hero   { display:grid; grid-template-columns:1fr 310px;     gap:17px; }
-        @media(max-width:1280px){
-          .an-grid-5{ grid-template-columns:repeat(3,1fr); }
-          .an-grid-4{ grid-template-columns:repeat(2,1fr); }
-          .an-hero  { grid-template-columns:1fr; }
-        }
-        @media(max-width:900px){
-          .an-grid-5{ grid-template-columns:repeat(2,1fr); }
-          .an-grid-3{ grid-template-columns:1fr 1fr; }
-        }
-        @media(max-width:640px){
-          .an-grid-5{ grid-template-columns:1fr; }
-          .an-grid-3{ grid-template-columns:1fr; }
-          .an-grid-2{ grid-template-columns:1fr; }
-          .an-grid-4{ grid-template-columns:1fr 1fr; }
-        }
-      `}</style>
+  // KPI cards — only real data, no hardcoded values
+  const kpiCards = data
+    ? data.youtubeOnly
+      ? [
+          { label: "Total Views",       value: fN(data.summary.reach),            icon: Eye,         color: "bg-red-100 text-red-700"     },
+          { label: "Subscribers",       value: fN(data.summary.followers_gained), icon: Users,       color: "bg-green-100 text-green-700" },
+          { label: "Videos Published",  value: String(data.summary.posts_published), icon: TrendingUp, color: "bg-violet-100 text-violet-700" },
+          { label: "Engagement",        value: fN(data.summary.engagement),       icon: Heart,       color: "bg-rose-100 text-rose-700"   },
+        ]
+      : [
+          { label: "Total Reach",       value: fN(data.summary.reach),            icon: Eye,         color: "bg-blue-100 text-blue-700"   },
+          { label: "Impressions",       value: fN(data.summary.impressions),      icon: TrendingUp,  color: "bg-violet-100 text-violet-700" },
+          { label: "Engagement Rate",   value: `${data.summary.engagement_rate}%`, icon: Heart,      color: "bg-rose-100 text-rose-700"   },
+          { label: "New Followers",     value: `+${fN(totalFol || data.summary.followers_gained)}`, icon: Users, color: "bg-green-100 text-green-700" },
+          { label: "Posts Published",   value: String(data.summary.posts_published), icon: TrendingUp, color: "bg-amber-100 text-amber-700" },
+        ]
+    : []
 
-      {/* ── HERO BAR ─────────────────────────────────────────────────────── */}
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:24, flexWrap:"wrap", gap:14 }}>
+  return (
+    <div className="max-w-7xl space-y-6">
+
+      {/* ── HEADER ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 style={{ fontFamily:"Syne,sans-serif", fontSize:26, fontWeight:800, letterSpacing:-.5, color:"#fff", margin:0 }}>
-            Performance <span style={{ color:C.ac }}>Analytics</span>
-          </h1>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:7, fontSize:13, color:C.tx2 }}>
-            <span style={{ width:7, height:7, borderRadius:"50%", background:C.gr, boxShadow:`0 0 8px ${C.gr}`, display:"inline-block", animation:"blink 2s infinite" }} />
-            Live · Updated 2 min ago · {new Date().toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}
-          </div>
+          <h2 className="text-2xl font-bold text-slate-900">Analytics</h2>
+          <p className="text-slate-500 mt-1 text-sm">Cross-platform performance overview</p>
         </div>
-        <div style={{ display:"flex", gap:9, alignItems:"center", flexWrap:"wrap" }}>
-          <div style={{ display:"flex", background:C.s1, border:`1px solid ${C.b1}`, borderRadius:9, overflow:"hidden" }}>
-            {(["7d","30d","90d"] as Range[]).map(r=>(
-              <button key={r} onClick={()=>setRange(r)} style={{
-                padding:"7px 13px", fontSize:12, fontWeight:500, cursor:"pointer", border:"none",
-                fontFamily:"inherit", transition:"all .2s",
-                background:range===r?C.ac:"transparent", color:range===r?"#fff":C.mu,
-              }}>{r.toUpperCase()}</button>
-            ))}
-          </div>
-          <button style={{
-            display:"flex", alignItems:"center", gap:6, padding:"8px 15px",
-            background:`linear-gradient(135deg,${C.ac},${C.ac2})`, border:"none",
-            borderRadius:9, color:"#fff", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit",
-          }}>↓ Export PDF Report</button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {(["7d", "30d", "90d"] as Range[]).map(r => (
+            <Button
+              key={r}
+              size="sm"
+              variant={range === r ? "default" : "outline"}
+              onClick={() => setRange(r)}
+            >
+              {r}
+            </Button>
+          ))}
+          <Button size="sm" variant="outline" className="gap-1.5">
+            <ExternalLink className="h-3.5 w-3.5" />
+            Export Report
+          </Button>
         </div>
       </div>
 
-      {/* ── BANNER ───────────────────────────────────────────────────────── */}
-      {!hideBanner && (
-        <div style={{
-          display:"flex", alignItems:"center", gap:11, padding:"11px 16px", marginBottom:22,
-          background:"linear-gradient(135deg,rgba(108,99,255,.12),rgba(0,212,255,.05))",
-          border:`1px solid rgba(108,99,255,.22)`, borderRadius:12,
-        }}>
-          <span style={{ fontSize:17 }}>🧠</span>
-          <span style={{ fontSize:13, lineHeight:1.5 }}>
-            {data?.isDemo
-              ? <><strong style={{ color:C.ac2 }}>Sample data</strong> — <Link href="/connect" style={{ color:C.ac, fontWeight:600 }}>Connect accounts</Link> for real analytics.</>
-              : <><strong style={{ color:C.ac2 }}>AI Insight:</strong> Reels outperform static posts by <strong style={{ color:C.gr }}>3.4×</strong> this month. Reallocating 20% of budget to Reels could boost reach by ₹48K/month.</>
-            }
-          </span>
-          <span style={{ marginLeft:"auto", cursor:"pointer", color:C.mu, fontSize:15, lineHeight:1, flexShrink:0 }} onClick={()=>setHideBanner(true)}>✕</span>
+      {/* ── DEMO BANNER ─────────────────────────────────────────────────────── */}
+      {data?.isDemo && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+          <Info className="h-4 w-4 text-amber-600 shrink-0" />
+          <p className="text-sm text-amber-700">
+            Sample data dikhaya ja raha hai — asli analytics ke liye{" "}
+            <Link href="/connect" className="font-semibold underline">apna account connect karo</Link>
+          </p>
         </div>
       )}
 
-      {/* ── PLATFORM TABS ────────────────────────────────────────────────── */}
-      <div style={{ display:"flex", gap:4, background:C.s1, border:`1px solid ${C.b1}`, borderRadius:13, padding:5, marginBottom:22, overflowX:"auto" }}>
-        {TABS.map(t=>{
-          const iAct = activePt===t.id
-          const col  = t.id==="youtube"?C.yt:t.id==="instagram"?C.ig:t.id==="facebook"?C.fb:C.ac
-          return (
-            <button key={t.id} onClick={()=>setActivePt(t.id)} style={{
-              display:"flex", alignItems:"center", gap:7, padding:"8px 14px",
-              borderRadius:9, cursor:"pointer", fontSize:13, fontWeight:500,
-              border:iAct?`1px solid ${col}44`:"1px solid transparent",
-              background:iAct?`${col}12`:"transparent",
-              color:iAct?col:C.mu, transition:"all .2s", fontFamily:"inherit", whiteSpace:"nowrap",
-            }}>
-              <span>{t.icon}</span> {t.label}
-              {t.sub && <span style={{ fontSize:10, color:C.mu, marginLeft:2 }}>{t.sub}</span>}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* ── KPI CARDS ────────────────────────────────────────────────────── */}
-      <div className="an-grid-5" style={{ marginBottom:18 }}>
-        {loading
-          ? [1,2,3,4,5].map(i=>(
-              <div key={i} style={{ background:C.s1, borderRadius:14, height:120, animation:"blink 1.5s infinite" }} />
-            ))
-          : <>
-              <KpiCard label="Total Followers"   value={fN(totalFol||data?.summary?.followers_gained||0)}  sub="+9,412 this month"    trend="8.3%"  up color={C.ac}  spark={SPARK[0]} delay={.05} />
-              <KpiCard label="Total Impressions"  value={fN(data?.summary?.impressions||0)}                sub="Across all platforms"  trend="14.2%" up color={C.gr}  spark={SPARK[1]} delay={.10} />
-              <KpiCard label="Engagement Rate"    value={`${data?.summary?.engagement_rate||0}%`}          sub="Industry avg: 3.2%"   trend="1.1%"  up color={C.ig}  spark={SPARK[2]} delay={.15} />
-              <KpiCard label="Total Engagement"   value={fN(data?.summary?.engagement||0)}                sub="Likes + comments"      trend="22.1%" up color={C.ac2} spark={SPARK[3]} delay={.20} />
-              <KpiCard label="Posts Published"    value={String(data?.summary?.posts_published||0)}        sub="Optimal: 50–60/mo"    trend="5.7%"  up color={C.yt}  spark={SPARK[4]} delay={.25} />
-            </>
-        }
-      </div>
-
-      {/* ── ROI ROW ──────────────────────────────────────────────────────── */}
-      <div className="an-grid-4" style={{ marginBottom:18 }}>
-        {ROI.map((r,i)=><RoiCard key={i} {...r} delay={.08+i*.05} />)}
-      </div>
-
-      {/* ── GROWTH CHART + DONUT ─────────────────────────────────────────── */}
-      <div className="an-hero" style={{ marginBottom:17 }}>
-        {/* Area Chart */}
-        <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, padding:20 }}>
-          <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff", marginBottom:3 }}>
-            {data?.youtubeOnly ? "Views & Engagement" : "Reach & Engagement"} Over Time
-          </div>
-          <div style={{ fontSize:11, color:C.mu, marginBottom:16 }}>Daily performance · Last {days} days</div>
-          <ResponsiveContainer width="100%" height={230}>
-            <AreaChart data={chartRows} margin={{ top:5, right:10, left:0, bottom:5 }}>
-              <defs>
-                <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={C.ac} stopOpacity={.2}/>
-                  <stop offset="95%" stopColor={C.ac} stopOpacity={0}/>
-                </linearGradient>
-                <linearGradient id="gE" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={C.ig} stopOpacity={.2}/>
-                  <stop offset="95%" stopColor={C.ig} stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.04)" />
-              <XAxis dataKey="date" tick={{ fontSize:11, fill:C.mu }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize:11, fill:C.mu }} tickLine={false} axisLine={false} tickFormatter={fN} />
-              <Tooltip
-                contentStyle={{ background:C.s2, border:`1px solid ${C.b2}`, borderRadius:8, fontSize:12 }}
-                labelStyle={{ color:C.tx }}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                formatter={(v:any, n:any)=>[fN(Number(v)), n==="reach"?(data?.youtubeOnly?"Views":"Reach"):"Engagement"] as any}
-              />
-              <Legend formatter={v=>v==="reach"?(data?.youtubeOnly?"Views":"Reach"):"Engagement"} wrapperStyle={{ fontSize:12, color:C.tx2 }} />
-              <Area type="monotone" dataKey="reach" stroke={C.ac} strokeWidth={2} fill="url(#gR)" dot={false} />
-              <Area type="monotone" dataKey="eng"   stroke={C.ig} strokeWidth={2} fill="url(#gE)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Donut */}
-        <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, padding:20 }}>
-          <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff", marginBottom:3 }}>Platform Share</div>
-          <div style={{ fontSize:11, color:C.mu, marginBottom:14 }}>By connected accounts</div>
-          {donut.length>0 ? (
-            <>
-              <div style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:16 }}>
-                <PieChart width={180} height={180}>
-                  <Pie data={donut} cx={90} cy={90} innerRadius={56} outerRadius={82} paddingAngle={3} dataKey="value">
-                    {donut.map((d,i)=><Cell key={i} fill={d.color} />)}
-                  </Pie>
-                  <Tooltip contentStyle={{ background:C.s2, border:`1px solid ${C.b2}`, borderRadius:8, fontSize:12 }} />
-                </PieChart>
-                <div style={{ position:"absolute", textAlign:"center", pointerEvents:"none" }}>
-                  <div style={{ fontFamily:"Syne,sans-serif", fontSize:18, fontWeight:800, color:"#fff" }}>{fN(totalFol)}</div>
-                  <div style={{ fontSize:10, color:C.mu }}>Total</div>
-                </div>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
-                {donut.map((d,i)=>{
-                  const pct = totalFol>0 ? Math.round((d.value/totalFol)*100) : 0
-                  return (
-                    <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <div style={{ width:8, height:8, borderRadius:2, background:d.color, flexShrink:0 }} />
-                      <span style={{ fontSize:12, fontWeight:500, flex:1, color:C.tx, textTransform:"capitalize" }}>{d.name}</span>
-                      <div style={{ width:58, height:3, background:C.s3, borderRadius:99, overflow:"hidden" }}>
-                        <div style={{ width:`${pct}%`, height:"100%", background:d.color, borderRadius:99 }} />
-                      </div>
-                      <span style={{ fontSize:12, fontWeight:700, color:C.tx2, minWidth:28, textAlign:"right" }}>{pct}%</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:200, gap:10 }}>
-              <div style={{ fontSize:32 }}>📊</div>
-              <span style={{ fontSize:13, color:C.mu }}>No accounts connected</span>
-              <Link href="/connect" style={{ color:C.ac, fontSize:13, fontWeight:600 }}>Connect accounts →</Link>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── 3-COL: Follower Growth / Platform Breakdown / Audience ─────── */}
-      <div className="an-grid-3" style={{ marginBottom:17 }}>
-        {/* Follower Growth */}
-        <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, padding:20 }}>
-          <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff", marginBottom:3 }}>Follower Growth</div>
-          <div style={{ fontSize:11, color:C.mu, marginBottom:14 }}>New followers gained per day</div>
-          <ResponsiveContainer width="100%" height={195}>
-            <AreaChart data={chartRows} margin={{ top:5, right:5, left:0, bottom:5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.04)" />
-              <XAxis dataKey="date" tick={{ fontSize:10, fill:C.mu }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize:10, fill:C.mu }} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ background:C.s2, border:`1px solid ${C.b2}`, borderRadius:8, fontSize:11 }} labelStyle={{ color:C.tx }} formatter={(v:any)=>[Number(v),"New Followers"] as any} />
-              <Area type="monotone" dataKey="fol" stroke={C.gr} strokeWidth={2} fill="rgba(0,229,160,.1)" dot={{ fill:C.gr, r:2 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Platform Breakdown */}
-        <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, padding:20 }}>
-          <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff", marginBottom:3 }}>Platform Breakdown</div>
-          <div style={{ fontSize:11, color:C.mu, marginBottom:16 }}>Connected platforms</div>
-          {data?.platforms && data.platforms.length>0 ? (
-            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              {data.platforms.map((p,i)=>{
-                const col = ptCol(p.platform)
-                const ico = ptIco(p.platform)
-                return (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:11 }}>
-                    <div style={{ width:36, height:36, borderRadius:9, background:`${col}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>{ico}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
-                        <span style={{ fontSize:12, fontWeight:500, color:C.tx }}>{p.account_name}</span>
-                        <span style={{ fontSize:11, color:C.tx2 }}>{fN(p.followers)} {p.platform==="youtube"?"subs":"fol"}</span>
-                      </div>
-                      {p.platform==="youtube"&&p.extra
-                        ? <div style={{ fontSize:11, color:C.mu }}>Views: {fN(p.extra.view_count)} · {p.extra.video_count} videos</div>
-                        : <div style={{ fontSize:11, color:C.mu }}>Reach: {fN(p.reach)} · Eng: {p.engagement_rate}%</div>
-                      }
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div style={{ textAlign:"center", padding:"50px 0", color:C.mu, fontSize:13 }}>
-              <Link href="/connect" style={{ color:C.ac, fontWeight:600 }}>Connect accounts →</Link>
-            </div>
-          )}
-        </div>
-
-        {/* Audience */}
-        <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, padding:20 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-            <div>
-              <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff", marginBottom:3 }}>Audience Insights</div>
-              <div style={{ fontSize:11, color:C.mu }}>Aggregated across platforms</div>
-            </div>
-            <span style={{ fontSize:10, padding:"2px 8px", background:C.s2, borderRadius:6, color:C.mu, border:`1px solid ${C.b1}` }}>Demo</span>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9, marginBottom:14 }}>
-            {[
-              { lbl:"Top Country", val:"🇮🇳 India",  sub:"42% of audience" },
-              { lbl:"Peak Age",    val:"18–24",       sub:"34.1%" },
-              { lbl:"Gender",      val:"♂58% ♀42%",  sub:"" },
-              { lbl:"Peak Time",   val:"8–10 PM",     sub:"IST · Weekdays" },
-            ].map((a,i)=>(
-              <div key={i} style={{ background:C.s2, borderRadius:10, padding:11, border:`1px solid ${C.b1}` }}>
-                <div style={{ fontSize:10, color:C.mu, textTransform:"uppercase", letterSpacing:.5, marginBottom:3 }}>{a.lbl}</div>
-                <div style={{ fontSize:13, fontWeight:700, color:"#fff" }}>{a.val}</div>
-                {a.sub&&<div style={{ fontSize:10, color:C.tx2, marginTop:2 }}>{a.sub}</div>}
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize:11, color:C.mu, marginBottom:8 }}>Top Countries</div>
-          {(["🇮🇳 India:42","🇺🇸 USA:18","🇬🇧 UK:12","🇦🇪 UAE:9"] as string[]).map((s,i)=>{
-            const [flag, pct] = [s.split(":")[0], parseInt(s.split(":")[1])]
-            return (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:7 }}>
-                <span style={{ fontSize:13, minWidth:70 }}>{flag}</span>
-                <div style={{ flex:1, height:3, background:C.s3, borderRadius:99, overflow:"hidden" }}>
-                  <div style={{ width:`${pct}%`, height:"100%", background:C.ac, borderRadius:99 }} />
-                </div>
-                <span style={{ fontSize:11, fontWeight:600, color:C.tx2, minWidth:28, textAlign:"right" }}>{pct}%</span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* ── HEATMAP + COMPETITORS ────────────────────────────────────────── */}
-      <div className="an-grid-2" style={{ marginBottom:17 }}>
-        {/* Heatmap */}
-        <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, padding:20 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-            <div>
-              <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff" }}>Best Time to Post</div>
-              <div style={{ fontSize:11, color:C.mu, marginTop:2 }}>Engagement intensity · Hour × Day</div>
-            </div>
-            <span style={{ fontSize:10, padding:"2px 8px", background:C.s2, borderRadius:6, color:C.mu, border:`1px solid ${C.b1}` }}>Demo</span>
-          </div>
-          <HeatmapViz />
-        </div>
-
-        {/* Competitors */}
-        <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, padding:20 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-            <div>
-              <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff" }}>Competitor Benchmarking</div>
-              <div style={{ fontSize:11, color:C.mu, marginTop:2 }}>vs. similar accounts in your niche</div>
-            </div>
-            <span style={{ fontSize:10, padding:"2px 8px", background:"rgba(255,153,0,.08)", borderRadius:6, color:"#ff9900", border:"1px solid rgba(255,153,0,.2)" }}>Coming Soon</span>
-          </div>
-          <ResponsiveContainer width="100%" height={165}>
-            <RadarChart data={RADAR_DATA}>
-              <PolarGrid stroke="rgba(255,255,255,.07)" />
-              <PolarAngleAxis dataKey="m" tick={{ fontSize:10, fill:C.mu }} />
-              <PolarRadiusAxis tick={false} axisLine={false} />
-              <Radar name="You" dataKey="you" stroke={C.ac} fill={C.ac} fillOpacity={.1} strokeWidth={2} />
-              <Radar name="Avg" dataKey="avg" stroke={C.yt} fill={C.yt} fillOpacity={.04} strokeWidth={1.5} />
-              <Legend wrapperStyle={{ fontSize:11, color:C.tx2 }} />
-            </RadarChart>
-          </ResponsiveContainer>
-          <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:12 }}>
-            {COMPS.map((c,i)=>(
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ width:30, height:30, borderRadius:"50%", background:`${c.col}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, flexShrink:0 }}>
-                  {c.isYou?"👤":"🅰"}
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:12, fontWeight:500, color:C.tx }}>{c.name}</div>
-                  <div style={{ fontSize:11, color:C.mu }}>{c.handle}</div>
-                </div>
-                <div style={{ textAlign:"right", flexShrink:0 }}>
-                  <div style={{ fontFamily:"Syne,sans-serif", fontSize:13, fontWeight:700, color:c.isYou?C.ac:C.tx }}>{c.eng}%</div>
-                  {!c.isYou&&(
-                    <div style={{ fontSize:10, color:c.eng>4.67?C.rd:C.gr }}>
-                      {c.eng>4.67?`▲ ${(c.eng-4.67).toFixed(2)}% ahead`:`▼ Win by ${(4.67-c.eng).toFixed(2)}%`}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── SMART ALERTS ─────────────────────────────────────────────────── */}
-      <div style={{ fontFamily:"Syne,sans-serif", fontSize:15, fontWeight:700, color:"#fff", marginBottom:13 }}>
-        ⚡ Smart Alerts & Recommendations
-      </div>
-      <div className="an-grid-2" style={{ marginBottom:22 }}>
-        {ALERTS.map((a,i)=>(
-          <div key={i} style={{
-            padding:15, borderRadius:12, background:C.s2, borderLeft:`3px solid ${a.col}`,
-            display:"flex", gap:11, animation:`fadeUp .4s ease ${i*.07}s both`,
-          }}>
-            <span style={{ fontSize:18, flexShrink:0, lineHeight:1, marginTop:1 }}>{a.icon}</span>
-            <div>
-              <div style={{ fontSize:12, fontWeight:600, color:C.tx, marginBottom:4 }}>{a.title}</div>
-              <div style={{ fontSize:11, color:C.tx2, lineHeight:1.6 }}>{a.body}</div>
-              <span style={{ fontSize:11, color:C.ac, cursor:"pointer", marginTop:6, display:"inline-block", fontWeight:500 }}>{a.action}</span>
-            </div>
-          </div>
+      {/* ── PLATFORM TABS ───────────────────────────────────────────────────── */}
+      <div className="flex gap-1 bg-slate-100 rounded-xl p-1 overflow-x-auto w-fit">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActivePt(t.id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+              activePt === t.id
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {t.icon}
+            {t.label}
+          </button>
         ))}
       </div>
 
-      {/* ── CONTENT PERFORMANCE TABLE ─────────────────────────────────── */}
-      <div style={{ background:C.s1, border:`1px solid ${C.b1}`, borderRadius:15, overflow:"hidden", marginBottom:22 }}>
-        <div style={{ padding:"17px 20px", borderBottom:`1px solid ${C.b1}`, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:11 }}>
-          <div>
-            <div style={{ fontFamily:"Syne,sans-serif", fontSize:14, fontWeight:700, color:"#fff" }}>Content Performance</div>
-            <div style={{ fontSize:11, color:C.mu, marginTop:3 }}>All posts · Last {days} days · Sorted by reach</div>
-          </div>
-          <Link href="/schedule" style={{
-            display:"inline-flex", alignItems:"center", gap:6, padding:"8px 15px",
-            background:`linear-gradient(135deg,${C.ac},${C.ac2})`,
-            borderRadius:9, color:"#fff", fontSize:12, fontWeight:600, textDecoration:"none",
-          }}>+ Schedule New Post</Link>
+      {/* ── KPI CARDS ───────────────────────────────────────────────────────── */}
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map(i => (
+            <Card key={i}><CardContent className="p-5"><div className="h-16 animate-pulse bg-slate-100 rounded-lg" /></CardContent></Card>
+          ))}
         </div>
-        {data?.top_posts && data.top_posts.length>0 ? (
-          <div style={{ overflowX:"auto" }}>
-            <table style={{ width:"100%", borderCollapse:"collapse" }}>
-              <thead>
-                <tr style={{ background:C.s2 }}>
-                  {["Post","Platform","Date","Reach","Likes","Comments","Eng. Rate"].map(h=>(
-                    <th key={h} style={{ padding:"10px 16px", fontSize:10, textTransform:"uppercase", letterSpacing:"1.2px", color:C.mu, textAlign:"left", fontWeight:600, whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {data.top_posts.map((post,i)=>{
-                  const col = ptCol(post.platform)
-                  const ico = ptIco(post.platform)
-                  const er  = post.reach>0 ? ((post.engagement/post.reach)*100).toFixed(1) : "0.0"
-                  return (
-                    <tr key={i} style={{ borderTop:`1px solid ${C.b1}`, cursor:"pointer" }}
-                      onMouseEnter={e=>(e.currentTarget.style.background="rgba(255,255,255,.017)")}
-                      onMouseLeave={e=>(e.currentTarget.style.background="")}>
-                      <td style={{ padding:"12px 16px" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-                          <div style={{ width:36, height:36, borderRadius:9, background:`${col}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>{ico}</div>
-                          <div style={{ maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontSize:13, fontWeight:500, color:C.tx }}>{post.caption}</div>
-                        </div>
-                      </td>
-                      <td style={{ padding:"12px 16px" }}>
-                        <span style={{ display:"inline-flex", padding:"3px 9px", borderRadius:20, fontSize:10, fontWeight:600, background:`${col}18`, color:col, textTransform:"capitalize" }}>{post.platform}</span>
-                      </td>
-                      <td style={{ padding:"12px 16px", fontSize:12, color:C.tx2 }}>{fD(post.published_at)}</td>
-                      <td style={{ padding:"12px 16px", fontWeight:600, fontSize:13, color:C.tx }}>{fN(post.reach)}</td>
-                      <td style={{ padding:"12px 16px", fontSize:13, color:C.tx2 }}>{post.likes}</td>
-                      <td style={{ padding:"12px 16px", fontSize:13, color:C.tx2 }}>{post.comments}</td>
-                      <td style={{ padding:"12px 16px" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                          <div style={{ width:50, height:3, background:C.s3, borderRadius:99, overflow:"hidden" }}>
-                            <div style={{ width:`${Math.min(100,parseFloat(er)*12)}%`, height:"100%", background:C.gr, borderRadius:99 }} />
-                          </div>
-                          <span style={{ fontSize:12, fontWeight:600, color:C.gr }}>{er}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div style={{ padding:"48px 20px", textAlign:"center", color:C.mu, fontSize:13 }}>
-            No post data yet.{" "}
-            <Link href="/schedule" style={{ color:C.ac, fontWeight:600 }}>Schedule your first post →</Link>
-          </div>
-        )}
-      </div>
-
-      {/* ── CONNECT CTA (demo only) ───────────────────────────────────── */}
-      {data?.isDemo && (
-        <div style={{
-          background:"linear-gradient(135deg,rgba(108,99,255,.1),rgba(0,212,255,.05))",
-          border:`1px dashed rgba(108,99,255,.3)`, borderRadius:15,
-          padding:"32px 20px", textAlign:"center", marginBottom:22,
-        }}>
-          <div style={{ fontSize:30, marginBottom:10 }}>🚀</div>
-          <div style={{ fontFamily:"Syne,sans-serif", fontSize:17, fontWeight:700, color:"#fff", marginBottom:6 }}>Apna account connect karo</div>
-          <div style={{ fontSize:13, color:C.tx2, maxWidth:380, margin:"0 auto 18px" }}>
-            Instagram ya Facebook connect karo aur real reach, engagement aur follower data dekho.
-          </div>
-          <Link href="/connect" style={{
-            display:"inline-flex", alignItems:"center", gap:7, padding:"10px 22px",
-            background:`linear-gradient(135deg,${C.ac},${C.ac2})`,
-            borderRadius:10, color:"#fff", fontSize:13, fontWeight:600, textDecoration:"none",
-          }}>🔗 Connect Account</Link>
+      ) : (
+        <div className={`grid gap-4 ${kpiCards.length === 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-5"}`}>
+          {kpiCards.map(m => (
+            <Card key={m.label}>
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-slate-500">{m.label}</p>
+                    <p className="text-2xl font-bold text-slate-900 mt-1">{m.value}</p>
+                  </div>
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${m.color}`}>
+                    <m.icon className="h-4 w-4" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
-      <div style={{ textAlign:"center", fontSize:11, color:C.mu, paddingBottom:8 }}>
-        Data refreshes every 6 hours via Meta Graph API &amp; YouTube Analytics
+      {/* ── YOUTUBE ONLY NOTICE ─────────────────────────────────────────────── */}
+      {data?.youtubeOnly && data.daily.every(d => d.reach === 0) && (
+        <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+          <FaYoutube className="h-5 w-5 text-red-600 shrink-0" />
+          <p className="text-sm text-blue-700">
+            YouTube channel stats shown above are live. Daily charts require Instagram or Facebook to be connected.
+          </p>
+        </div>
+      )}
+
+      {/* ── AREA CHART + PLATFORM SHARE ─────────────────────────────────────── */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Area Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-base">
+              {data?.youtubeOnly ? "Views & Engagement" : "Reach & Engagement"} Over Time
+            </CardTitle>
+            <CardDescription>Daily performance · Last {days} days</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {chartRows.length > 0 && chartRows.some(r => r.reach > 0) ? (
+              <ResponsiveContainer width="100%" height={240}>
+                <AreaChart data={chartRows} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="gReach" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#7c3aed" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#7c3aed" stopOpacity={0}    />
+                    </linearGradient>
+                    <linearGradient id="gEng" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#f43f5e" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}    />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={fN} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    formatter={(v: any, n: any) => [fN(Number(v)), n === "reach" ? (data?.youtubeOnly ? "Views" : "Reach") : "Engagement"] as any}
+                    labelFormatter={l => l}
+                  />
+                  <Legend formatter={v => v === "reach" ? (data?.youtubeOnly ? "Views" : "Reach") : "Engagement"} wrapperStyle={{ fontSize: 12 }} />
+                  <Area type="monotone" dataKey="reach" stroke="#7c3aed" strokeWidth={2} fill="url(#gReach)" dot={false} />
+                  <Area type="monotone" dataKey="eng"   stroke="#f43f5e" strokeWidth={2} fill="url(#gEng)"   dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-60 gap-3">
+                <p className="text-sm text-slate-500">Chart data unavailable — connect Instagram or Facebook for daily analytics.</p>
+                <Link href="/connect"><Button variant="outline" size="sm" className="gap-1.5"><Link2 className="h-3.5 w-3.5" />Connect Account</Button></Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Platform Share Donut */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Platform Share</CardTitle>
+            <CardDescription>By connected accounts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {donut.length > 0 ? (
+              <>
+                <div className="relative flex items-center justify-center mb-4">
+                  <PieChart width={160} height={160}>
+                    <Pie data={donut} cx={80} cy={80} innerRadius={48} outerRadius={72} paddingAngle={3} dataKey="value">
+                      {donut.map((d, i) => <Cell key={i} fill={d.color} />)}
+                    </Pie>
+                    <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }} formatter={(v: any) => [fN(Number(v)), ""] as any} />
+                  </PieChart>
+                  <div className="absolute text-center pointer-events-none">
+                    <p className="text-lg font-bold text-slate-900">{fN(totalFol)}</p>
+                    <p className="text-xs text-slate-400">Total</p>
+                  </div>
+                </div>
+                <div className="space-y-2.5">
+                  {donut.map((d, i) => {
+                    const pct = totalFol > 0 ? Math.round((d.value / totalFol) * 100) : 0
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: d.color }} />
+                        <span className="text-xs font-medium flex-1 text-slate-700 capitalize">{d.name}</span>
+                        <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: d.color }} />
+                        </div>
+                        <span className="text-xs font-semibold text-slate-500 w-8 text-right">{pct}%</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 gap-3">
+                <p className="text-sm text-slate-400 text-center">Connect accounts to see platform distribution</p>
+                <Link href="/connect"><Button variant="outline" size="sm">Connect Account</Button></Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* ── FOLLOWER GROWTH + PLATFORM BREAKDOWN ────────────────────────────── */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Follower Growth */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Follower Growth</CardTitle>
+            <CardDescription>New followers gained per day</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {chartRows.some(r => r.fol > 0) ? (
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={chartRows} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    formatter={(v: any) => [fN(Number(v)), "New Followers"] as any}
+                    labelFormatter={l => l}
+                  />
+                  <Area type="monotone" dataKey="fol" stroke="#10b981" strokeWidth={2} fill="rgba(16,185,129,0.1)" dot={{ fill: "#10b981", r: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-44 gap-2">
+                <p className="text-sm text-slate-400">No follower data available yet</p>
+                <Link href="/connect"><Button variant="outline" size="sm">Connect Account</Button></Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Platform Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Platform Breakdown</CardTitle>
+            <CardDescription>Connected platforms performance</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {data?.platforms && data.platforms.length > 0 ? (
+              data.platforms.map((p, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 shrink-0">
+                    <PlatformIcon platform={p.platform} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-slate-900 truncate">{p.account_name}</span>
+                      <span className="text-xs text-slate-500 ml-2 shrink-0">
+                        {p.platform === "youtube" ? `${fN(p.followers)} subs` : `${fN(p.followers)} followers`}
+                      </span>
+                    </div>
+                    {p.platform === "youtube" && p.extra ? (
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span>Views: <strong className="text-slate-700">{fN(p.extra.view_count)}</strong></span>
+                        <span>Videos: <strong className="text-slate-700">{p.extra.video_count}</strong></span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <span>Reach: <strong className="text-slate-700">{fN(p.reach)}</strong></span>
+                        <span>Eng: <strong className="text-slate-700">{p.engagement_rate}%</strong></span>
+                        <span>Posts: <strong className="text-slate-700">{p.posts}</strong></span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-44 gap-3">
+                <Link2 className="h-8 w-8 text-slate-300" />
+                <p className="text-sm text-slate-400">No accounts connected yet</p>
+                <Link href="/connect"><Button variant="outline" size="sm">Connect Account</Button></Link>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── BEST TIME TO POST + COMPETITOR BENCHMARKING ──────────────────────── */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Heatmap */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Best Time to Post</CardTitle>
+                <CardDescription>Engagement intensity by hour and day</CardDescription>
+              </div>
+              <Badge variant="secondary" className="text-xs">Demo</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <HeatmapViz />
+          </CardContent>
+        </Card>
+
+        {/* Competitors */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">Competitor Benchmarking</CardTitle>
+                <CardDescription>vs. similar accounts in your niche</CardDescription>
+              </div>
+              <Badge className="text-xs bg-amber-100 text-amber-700 hover:bg-amber-100">Coming Soon</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={160}>
+              <RadarChart data={[
+                { m: "Engagement", you: 87, avg: 72 },
+                { m: "Reach",      you: 74, avg: 80 },
+                { m: "Consistency",you: 80, avg: 74 },
+                { m: "Content",    you: 92, avg: 70 },
+                { m: "Growth",     you: 78, avg: 65 },
+                { m: "Response",   you: 70, avg: 80 },
+              ]}>
+                <PolarGrid stroke="#f1f5f9" />
+                <PolarAngleAxis dataKey="m" tick={{ fontSize: 10, fill: "#94a3b8" }} />
+                <PolarRadiusAxis tick={false} axisLine={false} />
+                <Radar name="You" dataKey="you" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.15} strokeWidth={2} />
+                <Radar name="Avg" dataKey="avg" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.05} strokeWidth={1.5} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+              </RadarChart>
+            </ResponsiveContainer>
+            <p className="text-xs text-slate-400 text-center mt-2">
+              Competitor data will be available in Phase 2. Values above are illustrative.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── SMART ALERTS ─────────────────────────────────────────────────────── */}
+      <div>
+        <h3 className="text-sm font-semibold text-slate-700 mb-3">⚡ Smart Alerts & Recommendations</h3>
+        <div className="grid md:grid-cols-2 gap-3">
+          {[
+            { icon:"🚀", title:"Engagement Spike",  body:"Tuesday posts are getting higher engagement. Try posting similar content on Tue–Wed evenings for better reach.",    color:"border-l-green-400",  bg:"bg-green-50"  },
+            { icon:"💡", title:"Post Consistently", body:"Accounts posting 4× per week see 40% more profile visits. Open the scheduler to plan your next batch of posts.",   color:"border-l-violet-400", bg:"bg-violet-50" },
+            { icon:"📅", title:"Festival Calendar", body:"Upcoming Indian festivals are great opportunities for branded content. Check the festival calendar for ready templates.", color:"border-l-amber-400",  bg:"bg-amber-50"  },
+            { icon:"📊", title:"Connect More Platforms", body:"LinkedIn and YouTube connected together give a full picture of B2B + B2C reach. Connect more accounts to unlock blended analytics.", color:"border-l-blue-400", bg:"bg-blue-50" },
+          ].map((a, i) => (
+            <div key={i} className={`flex gap-3 p-4 rounded-xl border-l-4 ${a.color} ${a.bg}`}>
+              <span className="text-lg shrink-0 mt-0.5">{a.icon}</span>
+              <div>
+                <p className="text-sm font-semibold text-slate-800 mb-1">{a.title}</p>
+                <p className="text-xs text-slate-600 leading-relaxed">{a.body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── AUDIENCE INSIGHTS ─────────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Audience Insights</CardTitle>
+              <CardDescription>Aggregated across connected platforms</CardDescription>
+            </div>
+            <Badge variant="secondary" className="text-xs">Demo data</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+            {[
+              { lbl: "Top Country", val: "🇮🇳 India",  sub: "42% of audience" },
+              { lbl: "Peak Age",    val: "18–24",       sub: "34.1% of users"  },
+              { lbl: "Gender",      val: "♂58% ♀42%",  sub: "Male majority"   },
+              { lbl: "Peak Time",   val: "8–10 PM",     sub: "IST · Weekdays"  },
+            ].map((a, i) => (
+              <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{a.lbl}</p>
+                <p className="text-base font-bold text-slate-900">{a.val}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{a.sub}</p>
+              </div>
+            ))}
+          </div>
+          <div className="space-y-2.5">
+            {[["🇮🇳 India",42],["🇺🇸 USA",18],["🇬🇧 UK",12],["🇦🇪 UAE",9],["🇨🇦 Canada",7]].map(([flag, pct], i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-sm w-24 text-slate-700">{String(flag)}</span>
+                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-violet-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                </div>
+                <span className="text-xs font-semibold text-slate-500 w-8 text-right">{pct}%</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-4 text-center">
+            Real audience data will appear here once Instagram or Facebook is connected.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* ── TOP POSTS ─────────────────────────────────────────────────────────── */}
+      {data?.top_posts && data.top_posts.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Top Posts</CardTitle>
+            <CardDescription>Best performing content this period</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {data.top_posts.map((post, i) => {
+              const er = post.reach > 0 ? ((post.engagement / post.reach) * 100).toFixed(1) : "0.0"
+              return (
+                <div key={i} className="flex items-start gap-3 rounded-lg border border-slate-100 p-3">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 shrink-0 mt-0.5">
+                    <PlatformIcon platform={post.platform} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-700 line-clamp-2">{post.caption}</p>
+                    <div className="flex gap-3 mt-1.5 text-xs text-slate-500">
+                      <span>👁 {fN(post.reach)}</span>
+                      <span>❤️ {post.likes}</span>
+                      <span>💬 {post.comments}</span>
+                      <span className="text-green-600 font-medium">{er}% eng</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-slate-400 shrink-0 mt-0.5">
+                    {fD(post.published_at)}
+                  </span>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── CONNECT CTA (demo only) ───────────────────────────────────────────── */}
+      {data?.isDemo && (
+        <Card className="border-dashed border-2 border-violet-200 bg-violet-50/30">
+          <CardContent className="py-10 flex flex-col items-center text-center">
+            <p className="text-lg font-bold text-slate-900 mb-2">Apna account connect karo</p>
+            <p className="text-sm text-slate-500 max-w-sm mb-5">
+              Instagram ya Facebook connect karo aur real reach, engagement aur follower data dekho.
+            </p>
+            <Link href="/connect">
+              <Button className="gap-2 bg-violet-600 hover:bg-violet-700">
+                <Link2 className="h-4 w-4" />
+                Connect Account
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      <p className="text-xs text-center text-slate-400">
+        Data refreshes every 6 hours via Meta Graph API & YouTube Analytics
+      </p>
     </div>
   )
 }
