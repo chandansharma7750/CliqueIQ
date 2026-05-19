@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import {
   AreaChart, Area, LineChart, Line,
+  BarChart, Bar,
   PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -254,12 +255,13 @@ export default function AnalyticsPage() {
         </div>
       )}
 
-      {/* ── YOUTUBE ONLY NOTICE ─────────────────────────────────────────────── */}
+      {/* ── YOUTUBE ONLY NOTICE — only show if Analytics API failed (all zeros) ── */}
       {data?.youtubeOnly && data.daily.every(d => d.reach === 0) && (
-        <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
-          <FaYoutube className="h-5 w-5 text-red-600 shrink-0" />
-          <p className="text-sm text-blue-700">
-            YouTube channel stats shown above are live. Daily charts require Instagram or Facebook to be connected.
+        <div className="flex items-center gap-3 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+          <FaYoutube className="h-5 w-5 text-red-500 shrink-0" />
+          <p className="text-sm text-red-700">
+            YouTube Analytics API needs the <strong>yt-analytics.readonly</strong> scope.{" "}
+            <Link href="/connect?reconnect=youtube" className="font-semibold underline">Reconnect YouTube</Link> to enable daily charts.
           </p>
         </div>
       )}
@@ -275,7 +277,7 @@ export default function AnalyticsPage() {
             <CardDescription>Daily performance · Last {days} days</CardDescription>
           </CardHeader>
           <CardContent>
-            {chartRows.length > 0 && chartRows.some(r => r.reach > 0) ? (
+            {chartRows.some(r => r.reach > 0) ? (
               <ResponsiveContainer width="100%" height={240}>
                 <AreaChart data={chartRows} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                   <defs>
@@ -302,9 +304,53 @@ export default function AnalyticsPage() {
                   <Area type="monotone" dataKey="eng"   stroke="#f43f5e" strokeWidth={2} fill="url(#gEng)"   dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
+            ) : data?.youtubeOnly ? (
+              /* YouTube connected but Analytics API not returning daily data — bar chart from channel totals */
+              (() => {
+                const ytPlat = data.platforms.find(p => p.platform === "youtube")
+                const views  = ytPlat?.extra?.view_count   || data.summary.reach
+                const subs   = ytPlat?.followers           || data.summary.followers_gained
+                const vids   = ytPlat?.extra?.video_count  || data.summary.posts_published
+                const barData = [
+                  { name: "Total Views",  value: views, fill: "#ff2244" },
+                  { name: "Subscribers", value: subs,  fill: "#10b981" },
+                  { name: "Videos",      value: vids,  fill: "#7c3aed" },
+                ]
+                return (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-500 font-medium">
+                        Channel: <strong className="text-slate-700">{ytPlat?.account_name || "YouTube Channel"}</strong>
+                      </p>
+                      <Link href="/connect?reconnect=youtube" className="text-xs text-violet-600 underline">
+                        Enable daily chart →
+                      </Link>
+                    </div>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }} barSize={48}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={fN} />
+                        <Tooltip
+                          contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          formatter={(v: any, n: any) => [fN(Number(v)), String(n)] as any}
+                        />
+                        <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                          {barData.map((d, i) => <Cell key={i} fill={d.fill} fillOpacity={0.85} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                    <p className="text-xs text-slate-400 text-center">
+                      All-time channel stats · Daily breakdown needs{" "}
+                      <Link href="/connect?reconnect=youtube" className="text-violet-600 underline">yt-analytics.readonly scope</Link>
+                    </p>
+                  </div>
+                )
+              })()
             ) : (
               <div className="flex flex-col items-center justify-center h-60 gap-3">
-                <p className="text-sm text-slate-500">Chart data unavailable — connect Instagram or Facebook for daily analytics.</p>
+                <p className="text-sm text-slate-500">Connect Instagram, Facebook, or YouTube to see daily analytics.</p>
                 <Link href="/connect"><Button variant="outline" size="sm" className="gap-1.5"><Link2 className="h-3.5 w-3.5" />Connect Account</Button></Link>
               </div>
             )}
@@ -360,11 +406,15 @@ export default function AnalyticsPage() {
 
       {/* ── FOLLOWER GROWTH + PLATFORM BREAKDOWN ────────────────────────────── */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Follower Growth */}
+        {/* Follower / Subscriber Growth */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Follower Growth</CardTitle>
-            <CardDescription>New followers gained per day</CardDescription>
+            <CardTitle className="text-base">
+              {data?.youtubeOnly ? "Subscriber Growth" : "Follower Growth"}
+            </CardTitle>
+            <CardDescription>
+              {data?.youtubeOnly ? "Subscribers gained per day" : "New followers gained per day"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {chartRows.some(r => r.fol > 0) ? (
@@ -376,12 +426,34 @@ export default function AnalyticsPage() {
                   <Tooltip
                     contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    formatter={(v: any) => [fN(Number(v)), "New Followers"] as any}
+                    formatter={(v: any) => [fN(Number(v)), data?.youtubeOnly ? "Subscribers Gained" : "New Followers"] as any}
                     labelFormatter={l => l}
                   />
                   <Area type="monotone" dataKey="fol" stroke="#10b981" strokeWidth={2} fill="rgba(16,185,129,0.1)" dot={{ fill: "#10b981", r: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
+            ) : data?.youtubeOnly ? (
+              /* YouTube connected — show total subscriber count as fallback */
+              (() => {
+                const ytPlat = data.platforms.find(p => p.platform === "youtube")
+                const subs = ytPlat?.followers || data.summary.followers_gained || 0
+                return (
+                  <div className="flex flex-col items-center justify-center h-44 gap-3">
+                    <FaYoutube className="h-8 w-8 text-red-500 opacity-40" />
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-slate-900">{fN(subs)}</p>
+                      <p className="text-sm text-slate-500 mt-0.5">Total Subscribers</p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {ytPlat?.account_name || "YouTube Channel"}
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-400 text-center max-w-xs">
+                      Daily subscriber gain chart needs{" "}
+                      <Link href="/connect?reconnect=youtube" className="text-violet-600 underline">yt-analytics.readonly scope</Link>
+                    </p>
+                  </div>
+                )
+              })()
             ) : (
               <div className="flex flex-col items-center justify-center h-44 gap-2">
                 <p className="text-sm text-slate-400">No follower data available yet</p>
@@ -518,40 +590,90 @@ export default function AnalyticsPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">Audience Insights</CardTitle>
-              <CardDescription>Aggregated across connected platforms</CardDescription>
+              <CardDescription>
+                {data?.youtubeOnly ? "YouTube channel stats" : "Aggregated across connected platforms"}
+              </CardDescription>
             </div>
-            <Badge variant="secondary" className="text-xs">Demo data</Badge>
+            {!data?.youtubeOnly && <Badge variant="secondary" className="text-xs">Demo data</Badge>}
+            {data?.youtubeOnly && (
+              <Badge className="text-xs bg-red-50 text-red-600 hover:bg-red-50 border border-red-100">
+                <FaYoutube className="h-3 w-3 mr-1" /> YouTube
+              </Badge>
+            )}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-            {[
-              { lbl: "Top Country", val: "🇮🇳 India",  sub: "42% of audience" },
-              { lbl: "Peak Age",    val: "18–24",       sub: "34.1% of users"  },
-              { lbl: "Gender",      val: "♂58% ♀42%",  sub: "Male majority"   },
-              { lbl: "Peak Time",   val: "8–10 PM",     sub: "IST · Weekdays"  },
-            ].map((a, i) => (
-              <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{a.lbl}</p>
-                <p className="text-base font-bold text-slate-900">{a.val}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{a.sub}</p>
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2.5">
-            {[["🇮🇳 India",42],["🇺🇸 USA",18],["🇬🇧 UK",12],["🇦🇪 UAE",9],["🇨🇦 Canada",7]].map(([flag, pct], i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-sm w-24 text-slate-700">{String(flag)}</span>
-                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-violet-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+          {data?.youtubeOnly ? (
+            /* ── YouTube channel stats ───────────────────────── */
+            (() => {
+              const ytPlat = data.platforms.find(p => p.platform === "youtube")
+              const stats = [
+                { lbl: "Total Views",   val: fN(ytPlat?.extra?.view_count || data.summary.reach),              sub: "All-time channel views"    },
+                { lbl: "Subscribers",   val: fN(ytPlat?.followers || data.summary.followers_gained),            sub: "Total subscribers"         },
+                { lbl: "Videos",        val: String(ytPlat?.extra?.video_count || data.summary.posts_published), sub: "Videos published"         },
+                { lbl: "Channel",       val: ytPlat?.account_name || "YouTube",                                 sub: "Connected channel"         },
+              ]
+              return (
+                <div className="space-y-5">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {stats.map((s, i) => (
+                      <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                        <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{s.lbl}</p>
+                        <p className="text-base font-bold text-slate-900 truncate">{s.val}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{s.sub}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="rounded-xl border border-red-100 bg-red-50 p-4 flex items-start gap-3">
+                    <FaYoutube className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-red-800 mb-1">Detailed Audience Demographics</p>
+                      <p className="text-xs text-red-600">
+                        Age, gender, and geography breakdown requires YouTube Studio API access.
+                        These insights are available in YouTube Studio directly, or reconnect with
+                        full permissions for richer data here.
+                      </p>
+                      <Link href="/connect?reconnect=youtube" className="text-xs font-semibold text-red-700 underline mt-2 inline-block">
+                        Reconnect YouTube →
+                      </Link>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-xs font-semibold text-slate-500 w-8 text-right">{pct}%</span>
+              )
+            })()
+          ) : (
+            /* ── Demo demographic data (non-YouTube) ─────────── */
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                {[
+                  { lbl: "Top Country", val: "🇮🇳 India",  sub: "42% of audience" },
+                  { lbl: "Peak Age",    val: "18–24",       sub: "34.1% of users"  },
+                  { lbl: "Gender",      val: "♂58% ♀42%",  sub: "Male majority"   },
+                  { lbl: "Peak Time",   val: "8–10 PM",     sub: "IST · Weekdays"  },
+                ].map((a, i) => (
+                  <div key={i} className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                    <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">{a.lbl}</p>
+                    <p className="text-base font-bold text-slate-900">{a.val}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{a.sub}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className="text-xs text-slate-400 mt-4 text-center">
-            Real audience data will appear here once Instagram or Facebook is connected.
-          </p>
+              <div className="space-y-2.5">
+                {[["🇮🇳 India",42],["🇺🇸 USA",18],["🇬🇧 UK",12],["🇦🇪 UAE",9],["🇨🇦 Canada",7]].map(([flag, pct], i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-sm w-24 text-slate-700">{String(flag)}</span>
+                    <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-violet-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs font-semibold text-slate-500 w-8 text-right">{pct}%</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-slate-400 mt-4 text-center">
+                Real audience data will appear here once Instagram or Facebook is connected.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 
