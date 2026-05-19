@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Heart, Users, TrendingUp, ArrowUpRight, ArrowDownRight, Link2, Info } from "lucide-react"
+import { Eye, Heart, Users, TrendingUp, Link2, Info } from "lucide-react"
 import Link from "next/link"
 import {
   LineChart, Line, AreaChart, Area,
@@ -50,6 +50,7 @@ interface TopPost {
 
 interface AnalyticsData {
   isDemo: boolean
+  youtubeOnly?: boolean
   summary: {
     reach: number
     impressions: number
@@ -98,40 +99,59 @@ export default function AnalyticsPage() {
   }, [range])
 
   const metrics = data
-    ? [
-        {
-          label: "Total Reach",
-          value: formatNum(data.summary.reach),
-          raw: data.summary.reach,
-          icon: Eye,
-          color: "bg-blue-100 text-blue-700",
-          trend: +12,
-        },
-        {
-          label: "Engagement Rate",
-          value: `${data.summary.engagement_rate}%`,
-          raw: data.summary.engagement_rate,
-          icon: Heart,
-          color: "bg-rose-100 text-rose-700",
-          trend: +0.4,
-        },
-        {
-          label: "New Followers",
-          value: `+${formatNum(data.summary.followers_gained)}`,
-          raw: data.summary.followers_gained,
-          icon: Users,
-          color: "bg-green-100 text-green-700",
-          trend: +8,
-        },
-        {
-          label: "Posts Published",
-          value: data.summary.posts_published.toString(),
-          raw: data.summary.posts_published,
-          icon: TrendingUp,
-          color: "bg-violet-100 text-violet-700",
-          trend: +3,
-        },
-      ]
+    ? data.youtubeOnly
+      ? [
+          {
+            label: "Total Views",
+            value: formatNum(data.summary.reach),
+            icon: Eye,
+            color: "bg-red-100 text-red-700",
+          },
+          {
+            label: "Subscribers",
+            value: formatNum(data.summary.followers_gained),
+            icon: Users,
+            color: "bg-green-100 text-green-700",
+          },
+          {
+            label: "Videos Published",
+            value: data.summary.posts_published.toString(),
+            icon: TrendingUp,
+            color: "bg-violet-100 text-violet-700",
+          },
+          {
+            label: "Avg Engagement",
+            value: "Connect Instagram",
+            icon: Heart,
+            color: "bg-slate-100 text-slate-400",
+          },
+        ]
+      : [
+          {
+            label: "Total Reach",
+            value: formatNum(data.summary.reach),
+            icon: Eye,
+            color: "bg-blue-100 text-blue-700",
+          },
+          {
+            label: "Engagement Rate",
+            value: `${data.summary.engagement_rate}%`,
+            icon: Heart,
+            color: "bg-rose-100 text-rose-700",
+          },
+          {
+            label: "New Followers",
+            value: `+${formatNum(data.summary.followers_gained)}`,
+            icon: Users,
+            color: "bg-green-100 text-green-700",
+          },
+          {
+            label: "Posts Published",
+            value: data.summary.posts_published.toString(),
+            icon: TrendingUp,
+            color: "bg-violet-100 text-violet-700",
+          },
+        ]
     : []
 
   return (
@@ -189,16 +209,6 @@ export default function AnalyticsPage() {
                   <div>
                     <p className="text-sm text-slate-500">{m.label}</p>
                     <p className="text-2xl font-bold text-slate-900 mt-1">{m.value}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                      {m.trend > 0 ? (
-                        <ArrowUpRight className="h-3 w-3 text-green-600" />
-                      ) : (
-                        <ArrowDownRight className="h-3 w-3 text-red-500" />
-                      )}
-                      <span className={`text-xs font-medium ${m.trend > 0 ? "text-green-600" : "text-red-500"}`}>
-                        {m.trend > 0 ? "+" : ""}{m.trend}% vs prev
-                      </span>
-                    </div>
                   </div>
                   <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${m.color}`}>
                     <m.icon className="h-4 w-4" />
@@ -210,8 +220,18 @@ export default function AnalyticsPage() {
         </div>
       )}
 
+      {/* YouTube-only info banner */}
+      {data && data.youtubeOnly && (
+        <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+          <FaYoutube className="h-5 w-5 text-red-600 flex-shrink-0" />
+          <p className="text-sm text-blue-700">
+            YouTube channel stats shown above are live. Daily reach/engagement charts require Instagram or Facebook to be connected.
+          </p>
+        </div>
+      )}
+
       {/* Reach & Engagement Chart */}
-      {data && (
+      {data && !data.youtubeOnly && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Reach & Engagement Over Time</CardTitle>
@@ -265,7 +285,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* Follower Growth Chart */}
-      {data && (
+      {data && !data.youtubeOnly && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Follower Growth</CardTitle>

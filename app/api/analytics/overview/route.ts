@@ -124,7 +124,37 @@ export async function GET(req: NextRequest) {
 
   if (platformRows.length === 0) return NextResponse.json(generateDemoData(days))
 
-  // Daily chart data
+  // YouTube-only mode: use real channel stats for summary, no fake chart data
+  const ytRow = platformRows.find((p) => p.platform === "youtube")
+  const hasInstagram = !!igData
+
+  if (!hasInstagram && ytRow?.extra) {
+    const yt = ytRow.extra as { subscriber_count: number; video_count: number; view_count: number }
+    // Build a flat daily array showing 0s (no daily YouTube analytics without paid API)
+    const now = new Date()
+    const daily = Array.from({ length: days }, (_, i) => {
+      const date = new Date(now)
+      date.setDate(date.getDate() - (days - 1 - i))
+      return { date: date.toISOString().split("T")[0], reach: 0, impressions: 0, engagement: 0, followers_gained: 0 }
+    })
+    return NextResponse.json({
+      isDemo: false,
+      youtubeOnly: true,
+      summary: {
+        reach: yt.view_count,           // Total Views
+        impressions: yt.view_count,
+        engagement: 0,
+        engagement_rate: 0,
+        followers_gained: yt.subscriber_count,  // Subscribers
+        posts_published: yt.video_count,         // Videos
+      },
+      daily,
+      platforms: platformRows,
+      top_posts: [],
+    })
+  }
+
+  // Instagram (or blended) mode
   let daily = igData?.daily
   if (!daily || daily.length === 0) {
     const now = new Date()
@@ -142,6 +172,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     isDemo: false,
+    youtubeOnly: false,
     summary: { reach: totalReach, impressions: totalImpressions, engagement: totalEngagement, engagement_rate: totalImpressions > 0 ? parseFloat(((totalEngagement / totalImpressions) * 100).toFixed(2)) : 0, followers_gained: totalFollowers, posts_published: igData?.media_count || 0 },
     daily,
     platforms: platformRows,
