@@ -11,7 +11,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts"
-import { FaInstagram, FaFacebook } from "react-icons/fa"
+import { FaInstagram, FaFacebook, FaYoutube } from "react-icons/fa"
 
 type Range = "7d" | "30d" | "90d"
 
@@ -30,6 +30,11 @@ interface PlatformData {
   reach: number
   engagement_rate: number
   posts: number
+  extra?: {
+    subscriber_count: number
+    video_count: number
+    view_count: number
+  }
 }
 
 interface TopPost {
@@ -72,6 +77,7 @@ function formatDate(dateStr: string) {
 const PlatformIcon = ({ platform }: { platform: string }) => {
   if (platform === "instagram") return <FaInstagram className="h-4 w-4 text-pink-500" />
   if (platform === "facebook") return <FaFacebook className="h-4 w-4 text-blue-600" />
+  if (platform === "youtube") return <FaYoutube className="h-4 w-4 text-red-600" />
   return null
 }
 
@@ -314,14 +320,24 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-slate-900 capitalize">{p.platform}</span>
-                      <span className="text-xs text-slate-500">{formatNum(p.followers)} followers</span>
+                      <span className="text-sm font-medium text-slate-900 capitalize">{p.account_name}</span>
+                      <span className="text-xs text-slate-500">
+                        {p.platform === "youtube" ? `${formatNum(p.followers)} subscribers` : `${formatNum(p.followers)} followers`}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span>Reach: <strong className="text-slate-700">{formatNum(p.reach)}</strong></span>
-                      <span>Eng: <strong className="text-slate-700">{p.engagement_rate}%</strong></span>
-                      <span>Posts: <strong className="text-slate-700">{p.posts}</strong></span>
-                    </div>
+                    {p.platform === "youtube" && p.extra ? (
+                      <div className="flex items-center gap-4 text-xs text-slate-500">
+                        <span>Views: <strong className="text-slate-700">{formatNum(p.extra.view_count)}</strong></span>
+                        <span>Videos: <strong className="text-slate-700">{p.extra.video_count}</strong></span>
+                        <span>Subs: <strong className="text-slate-700">{formatNum(p.extra.subscriber_count)}</strong></span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4 text-xs text-slate-500">
+                        <span>Reach: <strong className="text-slate-700">{formatNum(p.reach)}</strong></span>
+                        <span>Eng: <strong className="text-slate-700">{p.engagement_rate}%</strong></span>
+                        <span>Posts: <strong className="text-slate-700">{p.posts}</strong></span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
