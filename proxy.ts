@@ -38,6 +38,14 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/signup")
+
+  // Auto-redirect logged-in users from homepage to dashboard
+  if (user && pathname === "/") {
+    const url = request.nextUrl.clone()
+    url.pathname = "/dashboard"
+    return NextResponse.redirect(url)
+  }
+
   const isDashboardRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/schedule") ||
