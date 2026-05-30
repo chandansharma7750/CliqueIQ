@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const META_APP_ID = process.env.META_APP_ID!
-const REDIRECT_URI = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/meta/callback`
-
 // Instagram permissions
 const INSTAGRAM_SCOPES = [
   "instagram_basic",
@@ -22,6 +19,16 @@ const FACEBOOK_SCOPES = [
 ].join(",")
 
 export async function GET(req: NextRequest) {
+  // Resolve APP_URL dynamically so it works on Vercel and locally
+  const APP_URL =
+    process.env.NEXT_PUBLIC_APP_URL || `https://${req.headers.get("host")}`
+
+  const META_APP_ID = process.env.META_APP_ID
+  if (!META_APP_ID) {
+    return NextResponse.redirect(`${APP_URL}/connect?error=meta_not_configured`)
+  }
+
+  const REDIRECT_URI = `${APP_URL}/api/auth/meta/callback`
   const platform = req.nextUrl.searchParams.get("platform") ?? "instagram"
   const scopes = platform === "facebook" ? FACEBOOK_SCOPES : INSTAGRAM_SCOPES
 

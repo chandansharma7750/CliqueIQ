@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CliqueIQ — Analytics Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #05070f; --surface: #0a0d1a; --surface2: #0f1224; --surface3: #141828;
+      --border: rgba(255,255,255,0.06); --border2: rgba(255,255,255,0.11);
+      --text: #dde1f0; --text2: #8892b0; --muted: #4a5170;
+      --accent: #6c63ff; --accent2: #00d4ff; --green: #00e5a0; --red: #ff4d6d;
+      --yt: #ff2244; --ig: #f7187c; --tw: #1d9bf0; --li: #0a7bba; --fb: #2d7cf5; --tk: #6ee7f5;
+      --font-head: 'Syne', sans-serif; --font-body: 'DM Sans', sans-serif;
+      --sw: 256px;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:99px}
+    body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden}
+
+    /* SIDEBAR */
+    .sidebar{width:var(--sw);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:200;overflow-y:auto}
+    .sb-top{padding:22px 18px 16px;border-bottom:1px solid var(--border)}
+    .logo{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 20px rgba(108,99,255,0.35);flex-shrink:0}
+    .logo-text{font-family:var(--font-head);font-size:19px;font-weight:800;letter-spacing:-0.5px;color:#fff}
+    .logo-text span{color:var(--accent2)}
+    .ws-sel{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:border-color .2s}
+    .ws-sel:hover{border-color:var(--border2)}
+    .ws-l{display:flex;align-items:center;gap:8px}
+    .ws-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+    .ws-name{font-size:12px;font-weight:500}
+    .ws-sub{font-size:10px;color:var(--muted)}
+    .sb-nav{padding:14px 10px;flex:1}
+    .nav-sec{margin-bottom:18px}
+    .nav-lbl{font-size:9px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);padding:0 10px;margin-bottom:5px}
+    .ni{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .2s;margin-bottom:2px}
+    .ni-l{display:flex;align-items:center;gap:9px}
+    .ni-ico{width:15px;height:15px;flex-shrink:0;opacity:.7}
+    .ni:hover{background:var(--surface2);color:var(--text)}
+    .ni.active{background:rgba(108,99,255,0.12);color:#fff}
+    .ni.active .ni-ico{opacity:1;color:var(--accent)}
+    .nb{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600}
+    .nb.v{background:rgba(108,99,255,0.18);color:var(--accent)}
+    .nb.g{background:rgba(0,229,160,0.12);color:var(--green)}
+    .nb.r{background:rgba(255,77,109,0.15);color:var(--red)}
+    .conn-sec{padding:12px 10px;border-top:1px solid var(--border)}
+    .conn-lbl{font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;padding:0 4px;font-weight:600}
+    .cp{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:9px;background:var(--surface2);cursor:pointer;transition:background .2s;margin-bottom:5px}
+    .cp:hover{background:var(--surface3)}
+    .cp-l{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500}
+    .cp-r{font-size:10px;color:var(--muted)}
+    .cp-add{border:1px dashed var(--border);background:transparent;justify-content:center;color:var(--muted);font-size:12px}
+    .sb-foot{padding:14px 14px 18px;border-top:1px solid var(--border)}
+    .ucard{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:11px;background:var(--surface2);cursor:pointer;margin-bottom:10px}
+    .av{width:33px;height:33px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+    .u-name{font-size:12px;font-weight:600;color:var(--text)}
+    .u-plan{font-size:10px;color:var(--accent);background:rgba(108,99,255,0.15);display:inline-block;padding:1px 6px;border-radius:20px;margin-top:2px}
+    .upbtn{width:100%;padding:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:10px;font-family:var(--font-body);font-size:12px;font-weight:600;color:#fff;cursor:pointer;transition:opacity .2s,transform .2s;letter-spacing:.2px}
+    .upbtn:hover{opacity:.9;transform:translateY(-1px)}
+
+    /* MAIN */
+    .main{margin-left:var(--sw);flex:1;min-height:100vh;display:flex;flex-direction:column}
+    .hbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:13px 28px;background:rgba(5,7,15,0.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);gap:14px;flex-wrap:wrap}
+    .breadcrumb{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--muted)}
+    .breadcrumb .sep{color:var(--muted);font-size:10px}
+    .breadcrumb .cur{color:var(--text);font-weight:500}
+    .hbar-r{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+    .srch{display:flex;align-items:center;gap:7px;padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;min-width:200px;cursor:text;transition:border-color .2s}
+    .srch:hover{border-color:var(--border2)}
+    .srch input{background:none;border:none;outline:none;font-family:var(--font-body);font-size:12px;color:var(--text2);width:100%}
+    .srch input::placeholder{color:var(--muted)}
+    .drange{display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
+    .dbtn{padding:7px 12px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);font-family:var(--font-body);border:none;background:transparent;transition:all .2s}
+    .dbtn.active{background:var(--accent);color:#fff}
+    .dbtn:hover:not(.active){color:var(--text)}
+    .ibtn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:9px;cursor:pointer;color:var(--text2);transition:all .2s;position:relative}
+    .ibtn:hover{border-color:var(--border2);color:var(--text)}
+    .ndot{position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red)}
+    .cbtn{display:flex;align-items:center;gap:6px;padding:7px 15px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:9px;font-family:var(--font-body);font-size:12px;font-weight:600;color:#fff;cursor:pointer;transition:all .2s;white-space:nowrap}
+    .cbtn:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(108,99,255,.35)}
+    .cbtn.ghost{background:var(--surface);border:1px solid var(--border);color:var(--text2)}
+    .cbtn.ghost:hover{border-color:var(--border2);color:var(--text);box-shadow:none}
+
+    /* CONTENT */
+    .content{padding:26px 28px;flex:1}
+    .phero{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+    .ptitle{font-family:var(--font-head);font-size:25px;font-weight:800;letter-spacing:-.5px;line-height:1.1}
+    .ptitle em{font-style:normal;color:var(--accent)}
+    .psub{font-size:13px;color:var(--text2);margin-top:5px;display:flex;align-items:center;gap:6px}
+    .ldot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+    .hero-r{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+    .cmp-toggle{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--surface);border:1px solid var(--border);border-radius:9px;font-size:13px;color:var(--text2);cursor:pointer;transition:all .2s}
+    .cmp-toggle:hover{border-color:var(--border2);color:var(--text)}
+    .tsw{width:28px;height:16px;border-radius:99px;background:var(--accent);position:relative;flex-shrink:0}
+    .tkn{position:absolute;top:2px;left:14px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .2s}
+
+    /* BANNER */
+    .banner{display:flex;align-items:center;gap:11px;padding:11px 16px;background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(0,212,255,0.05));border:1px solid rgba(108,99,255,0.22);border-radius:12px;margin-bottom:22px;animation:fadeUp .3s ease both}
+    .ban-icon{font-size:17px;flex-shrink:0}
+    .ban-txt{font-size:13px;line-height:1.5}
+    .ban-txt strong{color:var(--accent2)}
+    .ban-act{margin-left:auto;flex-shrink:0;font-size:12px;color:var(--accent);cursor:pointer;font-weight:500;white-space:nowrap}
+    .ban-x{margin-left:8px;color:var(--muted);cursor:pointer;font-size:13px}
+
+    /* PLATFORM BAR */
+    .ptbar{display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:5px;margin-bottom:22px;overflow-x:auto}
+    .pt{display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .2s;white-space:nowrap;border:1px solid transparent}
+    .pt:hover{color:var(--text);background:var(--surface2)}
+    .pt.active{color:#fff;border-color:var(--border2);background:var(--surface2)}
+    .pt.active.all{border-color:rgba(108,99,255,.4);background:rgba(108,99,255,.1);color:var(--accent)}
+    .pt.active.yt{border-color:rgba(255,34,68,.4);background:rgba(255,34,68,.08);color:var(--yt)}
+    .pt.active.ig{border-color:rgba(247,24,124,.4);background:rgba(247,24,124,.08);color:var(--ig)}
+    .pt.active.tw{border-color:rgba(29,155,240,.4);background:rgba(29,155,240,.08);color:var(--tw)}
+    .pt.active.li{border-color:rgba(10,123,186,.4);background:rgba(10,123,186,.08);color:var(--li)}
+    .pt.active.fb{border-color:rgba(45,124,245,.4);background:rgba(45,124,245,.08);color:var(--fb)}
+    .pt.active.tk{border-color:rgba(110,231,245,.4);background:rgba(110,231,245,.08);color:var(--tk)}
+    .ptc{font-size:10px;color:var(--muted);margin-left:2px}
+
+    /* KPI */
+    .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:13px;margin-bottom:18px}
+    .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:19px;position:relative;overflow:hidden;cursor:pointer;transition:all .25s;animation:fadeUp .4s ease both}
+    .kpi:hover{border-color:var(--border2);transform:translateY(-2px)}
+    .kpi::before{content:'';position:absolute;top:0;left:18px;right:18px;height:1.5px;border-radius:0 0 2px 2px}
+    .kpi.c1::before{background:var(--accent)}
+    .kpi.c2::before{background:var(--green)}
+    .kpi.c3::before{background:var(--ig)}
+    .kpi.c4::before{background:var(--accent2)}
+    .kpi.c5::before{background:var(--yt)}
+    .kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px}
+    .kico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px}
+    .ktrend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:3px 7px;border-radius:20px}
+    .ktrend.up{background:rgba(0,229,160,0.12);color:var(--green)}
+    .ktrend.dn{background:rgba(255,77,109,0.12);color:var(--red)}
+    .kval{font-family:var(--font-head);font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;color:#fff}
+    .klbl{font-size:11px;color:var(--muted);margin-top:5px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+    .ksub{font-size:11px;color:var(--text2);margin-top:5px}
+    .spw{position:absolute;bottom:11px;right:11px;opacity:.35}
+
+    /* ROI */
+    .roi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:18px}
+    .roi-c{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:17px;text-align:center;animation:fadeUp .45s ease both;transition:all .2s;cursor:pointer}
+    .roi-c:hover{border-color:var(--border2);transform:translateY(-2px)}
+    .roi-ico{font-size:22px;margin-bottom:7px}
+    .roi-val{font-family:var(--font-head);font-size:22px;font-weight:800;color:#fff}
+    .roi-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+
+    /* GRID */
+    .g2{display:grid;grid-template-columns:1fr 320px;gap:17px;margin-bottom:17px}
+    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:17px;margin-bottom:17px}
+    .g22{display:grid;grid-template-columns:1fr 1fr;gap:17px;margin-bottom:17px}
+
+    /* CARD */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:15px;padding:20px;animation:fadeUp .45s ease both}
+    .ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .ct{font-family:var(--font-head);font-size:14px;font-weight:700;color:#fff}
+    .cs{font-size:11px;color:var(--muted);margin-top:2px}
+    .ca{display:flex;gap:5px;align-items:center}
+    .chip{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font-body);transition:all .2s}
+    .chip:hover{color:var(--text);border-color:var(--border2)}
+    .chip.active{border-color:rgba(108,99,255,.5);color:var(--accent);background:rgba(108,99,255,.1)}
+    .mbtn{width:27px;height:27px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s}
+    .mbtn:hover{border-color:var(--border2);color:var(--text)}
+
+    /* Growth legend */
+    .gleg{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+    .gli{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer}
+    .gld{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+    /* Share */
+    .sh-list{display:flex;flex-direction:column;gap:9px}
+    .sh-i{display:flex;align-items:center;gap:9px}
+    .sh-logo{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+    .sh-n{font-size:12px;font-weight:500;flex:1}
+    .sh-bw{width:70px;height:3.5px;background:var(--surface3);border-radius:99px;overflow:hidden}
+    .sh-bf{height:100%;border-radius:99px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+    .sh-p{font-size:12px;font-weight:700;min-width:30px;text-align:right}
+
+    /* Top posts */
+    .tp-list{display:flex;flex-direction:column;gap:11px}
+    .tp-i{display:flex;align-items:center;gap:11px}
+    .tp-rk{font-family:var(--font-head);font-size:16px;font-weight:800;color:var(--muted);width:20px;flex-shrink:0}
+    .tp-th{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+    .tp-info{flex:1;min-width:0}
+    .tp-title{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tp-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:5px}
+    .tp-r{text-align:right;flex-shrink:0}
+    .tp-reach{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--accent2)}
+    .tp-eng{font-size:11px;color:var(--green);margin-top:1px}
+
+    /* Audience */
+    .aud-g{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px}
+    .ac{background:var(--surface2);border-radius:10px;padding:12px;border:1px solid var(--border)}
+    .acl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+    .acv{font-family:var(--font-head);font-size:17px;font-weight:700}
+    .acs{font-size:10px;color:var(--text2);margin-top:2px}
+
+    /* Competitors */
+    .comp-list{display:flex;flex-direction:column;gap:9px}
+    .comp-i{display:flex;align-items:center;gap:11px}
+    .comp-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+    .comp-info{flex:1;min-width:0}
+    .comp-name{font-size:13px;font-weight:500}
+    .comp-h{font-size:11px;color:var(--muted)}
+    .comp-st{text-align:right}
+    .comp-v{font-family:var(--font-head);font-size:13px;font-weight:700}
+    .comp-d{font-size:10px;margin-top:1px}
+    .comp-d.up{color:var(--red)}
+    .comp-d.dn{color:var(--green)}
+
+    /* Scheduled */
+    .sch-list{display:flex;flex-direction:column;gap:9px}
+    .sch-i{display:flex;align-items:center;gap:11px;padding:11px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);cursor:pointer;transition:background .2s}
+    .sch-i:hover{background:var(--surface3)}
+    .sch-t{font-size:11px;color:var(--muted);min-width:44px;font-weight:600;line-height:1.4}
+    .sch-c{flex:1;min-width:0}
+    .sch-title{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sch-p{font-size:10px;color:var(--muted);margin-top:2px}
+    .badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;flex-shrink:0}
+    .badge.q{background:rgba(108,99,255,.15);color:var(--accent)}
+    .badge.l{background:rgba(0,229,160,.12);color:var(--green)}
+    .badge.d{background:rgba(255,255,255,.06);color:var(--text2)}
+
+    /* Alerts */
+    .al-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:20px}
+    .al-c{padding:14px;border-radius:12px;background:var(--surface2);border-left:3px solid;display:flex;gap:10px;animation:fadeUp .4s ease both}
+    .al-c.spike{border-color:var(--green)}
+    .al-c.warn{border-color:var(--red)}
+    .al-c.tip{border-color:var(--accent)}
+    .al-c.mile{border-color:var(--accent2)}
+    .al-ico{font-size:17px;flex-shrink:0}
+    .al-title{font-size:12px;font-weight:600;margin-bottom:3px}
+    .al-body{font-size:11px;color:var(--text2);line-height:1.55}
+    .al-act{font-size:11px;color:var(--accent);cursor:pointer;margin-top:4px;display:inline-block;font-weight:500}
+
+    /* Table */
+    .tw{background:var(--surface);border:1px solid var(--border);border-radius:15px;overflow:hidden;margin-bottom:20px;animation:fadeUp .5s ease both}
+    .tt{display:flex;align-items:center;justify-content:space-between;padding:17px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:11px}
+    .tfl{display:flex;gap:7px;flex-wrap:wrap}
+    .fc{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);color:var(--muted);cursor:pointer;background:transparent;font-family:var(--font-body);transition:all .2s}
+    .fc:hover{color:var(--text);border-color:var(--border2)}
+    .fc.active{border-color:rgba(108,99,255,.4);color:var(--accent);background:rgba(108,99,255,.08)}
+    .sbox{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;min-width:180px}
+    .sbox input{background:none;border:none;outline:none;font-family:var(--font-body);font-size:12px;color:var(--text2);width:100%}
+    .sbox input::placeholder{color:var(--muted)}
+    table{width:100%;border-collapse:collapse}
+    thead tr{background:var(--surface2)}
+    th{padding:10px 16px;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);text-align:left;font-weight:600;white-space:nowrap}
+    td{padding:12px 16px;font-size:13px;border-top:1px solid var(--border);vertical-align:middle}
+    tbody tr{transition:background .15s;cursor:pointer}
+    tbody tr:hover{background:rgba(255,255,255,.017)}
+    .pc{display:flex;align-items:center;gap:9px}
+    .pico{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+    .pname{font-size:13px;font-weight:500;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ptyp{font-size:10px;color:var(--muted);margin-top:2px}
+    .pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600}
+    .pill.yt{background:rgba(255,34,68,.12);color:var(--yt)}
+    .pill.ig{background:rgba(247,24,124,.12);color:var(--ig)}
+    .pill.tw{background:rgba(29,155,240,.12);color:var(--tw)}
+    .pill.li{background:rgba(10,123,186,.12);color:var(--li)}
+    .pill.fb{background:rgba(45,124,245,.12);color:var(--fb)}
+    .pill.tk{background:rgba(110,231,245,.12);color:var(--tk)}
+    .rbar{display:flex;align-items:center;gap:7px}
+    .rbt{width:52px;height:3px;background:var(--surface3);border-radius:99px;overflow:hidden}
+    .rbf{height:100%;border-radius:99px}
+    .sc{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;font-size:10px;font-weight:700}
+    .sc.h{background:rgba(0,229,160,.15);color:var(--green)}
+    .sc.m{background:rgba(108,99,255,.15);color:var(--accent)}
+    .sc.l{background:rgba(255,77,109,.12);color:var(--red)}
+
+    /* Footer */
+    .pfoot{padding:13px 28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted)}
+    .flinks{display:flex;gap:14px}
+    .flinks a{color:var(--muted);text-decoration:none;transition:color .2s}
+    .flinks a:hover{color:var(--text2)}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.15)}}
+
+    @media(max-width:1300px){.kpi-row{grid-template-columns:repeat(3,1fr)}.roi-row{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}}
+    @media(max-width:1100px){.g2{grid-template-columns:1fr}}
+    @media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.kpi-row{grid-template-columns:1fr 1fr}}
+    @media(max-width:600px){.kpi-row{grid-template-columns:1fr}.g22{grid-template-columns:1fr}.al-grid{grid-template-columns:1fr}.roi-row{grid-template-columns:1fr 1fr}}
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-top">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">Clique<span>IQ</span></div>
+    </div>
+    <div class="ws-sel">
+      <div class="ws-l">
+        <div class="ws-dot"></div>
+        <div><div class="ws-name">Brand Studio</div><div class="ws-sub">6 platforms connected</div></div>
+      </div>
+      <span style="color:var(--muted);font-size:12px">⌄</span>
+    </div>
+  </div>
+  <div class="sb-nav">
+    <div class="nav-sec">
+      <div class="nav-lbl">Main</div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</div></div>
+      <div class="ni active"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Analytics</div><div class="nb v">Live</div></div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Scheduler</div><div class="nb g">14</div></div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Inbox</div><div class="nb r">3</div></div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Content</div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4z"/></svg>Posts</div></div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8.56 2.75c4.37 6.03 6.02 9.42 8.03 17.72"/><path d="M2 12h20"/></svg>Campaigns</div></div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Audience</div></div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51z"/></svg>Competitors</div></div>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Tools</div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 22v-2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M22 12h-2"/></svg>AI Captions</div></div>
+      <div class="ni"><div class="ni-l"><svg class="ni-ico" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Reports</div></div>
+    </div>
+  </div>
+  <div class="conn-sec">
+    <div class="conn-lbl">Connected Platforms</div>
+    <div class="cp"><div class="cp-l"><span>▶</span>YouTube</div><div class="cp-r">248K</div></div>
+    <div class="cp"><div class="cp-l"><span>📸</span>Instagram</div><div class="cp-r">204K</div></div>
+    <div class="cp"><div class="cp-l"><span>🎵</span>TikTok</div><div class="cp-r">49.1K</div></div>
+    <div class="cp"><div class="cp-l"><span>✕</span>Twitter/X</div><div class="cp-r">33.8K</div></div>
+    <div class="cp"><div class="cp-l"><span>in</span>LinkedIn</div><div class="cp-r">12.4K</div></div>
+    <div class="cp cp-add">+ Add Platform</div>
+  </div>
+  <div class="sb-foot">
+    <div class="ucard">
+      <div class="av">AK</div>
+      <div><div class="u-name">Arjun Kaur</div><div class="u-plan">Pro Plan</div></div>
+      <span style="color:var(--muted);font-size:13px;margin-left:auto">⚙</span>
+    </div>
+    <button class="upbtn">⚡ Upgrade to Team</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- HEADER -->
+  <div class="hbar">
+    <div class="breadcrumb">
+      <span>CliqueIQ</span><span class="sep">›</span><span>Brand Studio</span><span class="sep">›</span><span class="cur">Analytics</span>
+    </div>
+    <div class="hbar-r">
+      <div class="srch"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Search posts, metrics..."></div>
+      <div class="drange">
+        <button class="dbtn">7D</button><button class="dbtn active">30D</button><button class="dbtn">90D</button><button class="dbtn">Custom</button>
+      </div>
+      <div class="ibtn"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><div class="ndot"></div></div>
+      <button class="cbtn"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export PDF Report</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- HERO -->
+    <div class="phero">
+      <div>
+        <div class="ptitle">Performance <em>Analytics</em></div>
+        <div class="psub"><div class="ldot"></div>Live · Updated 2 min ago · May 19, 2026</div>
+      </div>
+      <div class="hero-r">
+        <div class="cmp-toggle" onclick="var k=this.querySelector('.tkn');k.style.left=k.style.left==='2px'?'14px':'2px'">
+          <div class="tsw"><div class="tkn" style="left:14px"></div></div>Compare Period
+        </div>
+        <button class="cbtn ghost"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 22v-2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M22 12h-2"/></svg>Customize</button>
+        <button class="cbtn"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>Share Dashboard</button>
+      </div>
+    </div>
+
+    <!-- BANNER -->
+    <div class="banner" id="banner">
+      <div class="ban-icon">🧠</div>
+      <div class="ban-txt"><strong>AI Insight:</strong> Instagram Reels outperforming YouTube Shorts by <strong>3.4×</strong> this month. Reallocating 20% of video budget to Reels could increase your monthly ROI by ₹48,000.</div>
+      <div class="ban-act">Full Analysis →</div>
+      <div class="ban-x" onclick="document.getElementById('banner').style.display='none'">✕</div>
+    </div>
+
+    <!-- PLATFORM BAR -->
+    <div class="ptbar">
+      <div class="pt all active" onclick="swPt(this)"><span>⚡</span>All Platforms<span class="ptc">6</span></div>
+      <div class="pt yt" onclick="swPt(this)"><span>▶</span>YouTube<span class="ptc">248K</span></div>
+      <div class="pt ig" onclick="swPt(this)"><span>📸</span>Instagram<span class="ptc">204K</span></div>
+      <div class="pt tw" onclick="swPt(this)"><span>✕</span>Twitter/X<span class="ptc">33.8K</span></div>
+      <div class="pt li" onclick="swPt(this)"><span>in</span>LinkedIn<span class="ptc">12.4K</span></div>
+      <div class="pt fb" onclick="swPt(this)"><span>f</span>Facebook<span class="ptc">18.2K</span></div>
+      <div class="pt tk" onclick="swPt(this)"><span>🎵</span>TikTok<span class="ptc">49.1K</span></div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-row">
+      <div class="kpi c1" style="animation-delay:.05s">
+        <div class="kpi-top"><div class="kico" style="background:rgba(108,99,255,.12)">👥</div><div class="ktrend up">▲ 8.3%</div></div>
+        <div class="kval">1.24M</div><div class="klbl">Total Followers</div><div class="ksub">+9,412 this month</div>
+        <div class="spw"><canvas id="sp1" width="78" height="26"></canvas></div>
+      </div>
+      <div class="kpi c2" style="animation-delay:.1s">
+        <div class="kpi-top"><div class="kico" style="background:rgba(0,229,160,.1)">👁</div><div class="ktrend up">▲ 14.2%</div></div>
+        <div class="kval">18.7M</div><div class="klbl">Total Impressions</div><div class="ksub">Across all platforms</div>
+        <div class="spw"><canvas id="sp2" width="78" height="26"></canvas></div>
+      </div>
+      <div class="kpi c3" style="animation-delay:.15s">
+        <div class="kpi-top"><div class="kico" style="background:rgba(247,24,124,.1)">❤️</div><div class="ktrend up">▲ 1.1%</div></div>
+        <div class="kval">4.67%</div><div class="klbl">Engagement Rate</div><div class="ksub">Industry avg: 3.2%</div>
+        <div class="spw"><canvas id="sp3" width="78" height="26"></canvas></div>
+      </div>
+      <div class="kpi c4" style="animation-delay:.2s">
+        <div class="kpi-top"><div class="kico" style="background:rgba(0,212,255,.1)">🔗</div><div class="ktrend up">▲ 22.1%</div></div>
+        <div class="kval">86.4K</div><div class="klbl">Link Clicks</div><div class="ksub">CTR: 0.46%</div>
+        <div class="spw"><canvas id="sp4" width="78" height="26"></canvas></div>
+      </div>
+      <div class="kpi c5" style="animation-delay:.25s">
+        <div class="kpi-top"><div class="kico" style="background:rgba(255,34,68,.1)">📅</div><div class="ktrend up">▲ 5.7%</div></div>
+        <div class="kval">47</div><div class="klbl">Posts Published</div><div class="ksub">Optimal: 50–60/mo</div>
+        <div class="spw"><canvas id="sp5" width="78" height="26"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ROI -->
+    <div class="roi-row">
+      <div class="roi-c" style="animation-delay:.08s"><div class="roi-ico">💰</div><div class="roi-val">₹4.2L</div><div class="roi-lbl">Estimated Earned Media Value</div></div>
+      <div class="roi-c" style="animation-delay:.13s"><div class="roi-ico">🎯</div><div class="roi-val">312%</div><div class="roi-lbl">Social Media ROI</div></div>
+      <div class="roi-c" style="animation-delay:.18s"><div class="roi-ico">📣</div><div class="roi-val">₹0.82</div><div class="roi-lbl">Cost Per Engagement</div></div>
+      <div class="roi-c" style="animation-delay:.23s"><div class="roi-ico">🏆</div><div class="roi-val">94/100</div><div class="roi-lbl">Brand Health Score</div></div>
+    </div>
+
+    <!-- GROWTH + SHARE -->
+    <div class="g2">
+      <div class="card">
+        <div class="ch">
+          <div><div class="ct">Follower Growth & Reach</div><div class="cs">All connected platforms · Last 30 days</div></div>
+          <div class="ca">
+            <button class="chip active" onclick="chChip(this)">Followers</button>
+            <button class="chip" onclick="chChip(this)">Reach</button>
+            <button class="chip" onclick="chChip(this)">Impressions</button>
+            <div class="mbtn">⋯</div>
+          </div>
+        </div>
+        <div class="gleg">
+          <div class="gli"><div class="gld" style="background:var(--yt)"></div>YouTube</div>
+          <div class="gli"><div class="gld" style="background:var(--ig)"></div>Instagram</div>
+          <div class="gli"><div class="gld" style="background:var(--tk)"></div>TikTok</div>
+          <div class="gli"><div class="gld" style="background:var(--tw)"></div>Twitter/X</div>
+          <div class="gli"><div class="gld" style="background:var(--li)"></div>LinkedIn</div>
+        </div>
+        <canvas id="growthChart" height="195"></canvas>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">Platform Share</div><div class="cs">By total audience</div></div><div class="mbtn">⋯</div></div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+          <canvas id="donutChart" width="170" height="170"></canvas>
+          <div style="position:absolute;text-align:center">
+            <div style="font-family:var(--font-head);font-size:20px;font-weight:800;color:#fff">1.24M</div>
+            <div style="font-size:10px;color:var(--muted)">Total Reach</div>
+          </div>
+        </div>
+        <div class="sh-list" id="shList"></div>
+      </div>
+    </div>
+
+    <!-- 3-COL -->
+    <div class="g3">
+      <div class="card">
+        <div class="ch"><div><div class="ct">Engagement Types</div><div class="cs">Per interaction · All platforms</div></div><div class="mbtn">⋯</div></div>
+        <canvas id="engChart" height="195"></canvas>
+      </div>
+      <div class="card">
+        <div class="ch">
+          <div><div class="ct">Top Performing Posts</div><div class="cs">By reach · 30 days</div></div>
+          <div class="ca"><button class="chip active" onclick="chChip(this)">Reach</button><button class="chip" onclick="chChip(this)">Eng.</button></div>
+        </div>
+        <div class="tp-list">
+          <div class="tp-i"><div class="tp-rk">1</div><div class="tp-th" style="background:rgba(255,34,68,.1)">🎬</div><div class="tp-info"><div class="tp-title">How to grow 10k in 30 days</div><div class="tp-meta"><span style="color:var(--yt)">▶ YT</span>· 3d ago</div></div><div class="tp-r"><div class="tp-reach">248K</div><div class="tp-eng">↑ 8.2%</div></div></div>
+          <div class="tp-i"><div class="tp-rk">2</div><div class="tp-th" style="background:rgba(247,24,124,.1)">📸</div><div class="tp-info"><div class="tp-title">BTS Reel: Studio Day</div><div class="tp-meta"><span style="color:var(--ig)">📸 IG</span>· 5d ago</div></div><div class="tp-r"><div class="tp-reach">184K</div><div class="tp-eng">↑ 9.1%</div></div></div>
+          <div class="tp-i"><div class="tp-rk">3</div><div class="tp-th" style="background:rgba(110,231,245,.1)">🎵</div><div class="tp-info"><div class="tp-title">Morning routine challenge</div><div class="tp-meta"><span style="color:var(--tk)">🎵 TK</span>· 7d ago</div></div><div class="tp-r"><div class="tp-reach">122K</div><div class="tp-eng">↑ 7.4%</div></div></div>
+          <div class="tp-i"><div class="tp-rk">4</div><div class="tp-th" style="background:rgba(29,155,240,.1)">💬</div><div class="tp-info"><div class="tp-title">Thread: SMM mistakes</div><div class="tp-meta"><span style="color:var(--tw)">✕ TW</span>· 9d ago</div></div><div class="tp-r"><div class="tp-reach">67K</div><div class="tp-eng">↑ 6.2%</div></div></div>
+          <div class="tp-i"><div class="tp-rk">5</div><div class="tp-th" style="background:rgba(10,123,186,.1)">📋</div><div class="tp-info"><div class="tp-title">Thought leadership: Brand ROI</div><div class="tp-meta"><span style="color:var(--li)">in LI</span>· 11d ago</div></div><div class="tp-r"><div class="tp-reach">41K</div><div class="tp-eng">↑ 5.5%</div></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">Audience Insights</div><div class="cs">Aggregated across platforms</div></div><div class="mbtn">⋯</div></div>
+        <div class="aud-g">
+          <div class="ac"><div class="acl">Top Country</div><div class="acv" style="font-size:15px">🇮🇳 India</div><div class="acs">42% of audience</div></div>
+          <div class="ac"><div class="acl">Peak Age</div><div class="acv">18–24</div><div class="acs">34.1%</div></div>
+          <div class="ac"><div class="acl">Gender</div><div class="acv" style="font-size:13px">♂ 58% ♀ 42%</div></div>
+          <div class="ac"><div class="acl">Peak Time</div><div class="acv">8–10 PM</div><div class="acs">IST · Weekdays</div></div>
+        </div>
+        <canvas id="geoChart" height="100"></canvas>
+      </div>
+    </div>
+
+    <!-- HEATMAP + COMPETITORS -->
+    <div class="g22">
+      <div class="card">
+        <div class="ch">
+          <div><div class="ct">Best Time to Post</div><div class="cs">Engagement intensity · Hour × Day</div></div>
+          <div class="ca"><button class="chip active">All</button><button class="chip">IG</button><button class="chip">YT</button><button class="chip">TK</button></div>
+        </div>
+        <div id="heatWrap"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">Competitor Benchmarking</div><div class="cs">vs. similar accounts in your niche</div></div><div class="mbtn">⋯</div></div>
+        <canvas id="radarChart" height="195" style="margin-bottom:14px"></canvas>
+        <div class="comp-list">
+          <div class="comp-i"><div class="comp-av" style="background:rgba(108,99,255,.15)">👤</div><div class="comp-info"><div class="comp-name">You (Brand Studio)</div><div class="comp-h">@brandstudio</div></div><div class="comp-st"><div class="comp-v" style="color:var(--accent)">4.67%</div><div class="comp-d dn">● You</div></div></div>
+          <div class="comp-i"><div class="comp-av" style="background:rgba(0,212,255,.1)">🅱</div><div class="comp-info"><div class="comp-name">Competitor Beta</div><div class="comp-h">@betacreatives</div></div><div class="comp-st"><div class="comp-v">5.21%</div><div class="comp-d up">▲ 0.54% ahead</div></div></div>
+          <div class="comp-i"><div class="comp-av" style="background:rgba(255,34,68,.1)">🅰</div><div class="comp-info"><div class="comp-name">Competitor Alpha</div><div class="comp-h">@alphabrands</div></div><div class="comp-st"><div class="comp-v">3.89%</div><div class="comp-d dn">▼ You win by 0.78%</div></div></div>
+          <div class="comp-i"><div class="comp-av" style="background:rgba(247,24,124,.1)">🅲</div><div class="comp-info"><div class="comp-name">Competitor Gamma</div><div class="comp-h">@gammadigital</div></div><div class="comp-st"><div class="comp-v">3.12%</div><div class="comp-d dn">▼ You win by 1.55%</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div style="font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:13px;color:#fff">⚡ Smart Alerts & Recommendations</div>
+    <div class="al-grid">
+      <div class="al-c spike"><div class="al-ico">🚀</div><div><div class="al-title">Engagement Spike — Instagram</div><div class="al-body">Tuesday Reels got 3.2× avg engagement. Post similar content Tue–Wed 7–9 PM for maximum reach.</div><span class="al-act">Create similar post →</span></div></div>
+      <div class="al-c warn"><div class="al-ico">⚠️</div><div><div class="al-title">Reach Declining — YouTube</div><div class="al-body">Reach dropped 18% this week. CTR below 4% — A/B test thumbnails and refresh titles now.</div><span class="al-act">Optimize thumbnails →</span></div></div>
+      <div class="al-c tip"><div class="al-ico">💡</div><div><div class="al-title">Posting Gap — LinkedIn</div><div class="al-body">No posts in 12 days. Accounts posting 4×/week see 40% more profile visits. Schedule now.</div><span class="al-act">Open Scheduler →</span></div></div>
+      <div class="al-c mile"><div class="al-ico">🎉</div><div><div class="al-title">50K TikTok Milestone in ~6 Days</div><div class="al-body">At current growth you'll hit 50K by May 25. Plan a milestone post to maximize momentum!</div><span class="al-act">Plan post →</span></div></div>
+    </div>
+
+    <!-- SCHEDULED + STORY -->
+    <div class="g22">
+      <div class="card">
+        <div class="ch">
+          <div><div class="ct">Upcoming Scheduled Posts</div><div class="cs">Next 48 hours</div></div>
+          <button class="cbtn" style="font-size:11px;padding:6px 12px">+ New Post</button>
+        </div>
+        <div class="sch-list">
+          <div class="sch-i"><div class="sch-t">Today<br>7:00 PM</div><div class="sch-c"><div class="sch-title">5 Trending Reels Formats for June</div><div class="sch-p">📸 Instagram · Reel</div></div><div class="badge l">● Live Soon</div></div>
+          <div class="sch-i"><div class="sch-t">Today<br>9:30 PM</div><div class="sch-c"><div class="sch-title">Thread: How we 10X'd our reach</div><div class="sch-p">✕ Twitter/X · Thread</div></div><div class="badge q">Queued</div></div>
+          <div class="sch-i"><div class="sch-t">May 20<br>10:00 AM</div><div class="sch-c"><div class="sch-title">Brand story video — June Launch</div><div class="sch-p">▶ YouTube · Long-form</div></div><div class="badge q">Queued</div></div>
+          <div class="sch-i"><div class="sch-t">May 20<br>2:00 PM</div><div class="sch-c"><div class="sch-title">LinkedIn thought leadership post</div><div class="sch-p">in LinkedIn · Article</div></div><div class="badge d">Draft</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">Stories & Reels Performance</div><div class="cs">Instagram + TikTok · Weekly trend</div></div><div class="mbtn">⋯</div></div>
+        <canvas id="storyChart" height="195"></canvas>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="tw">
+      <div class="tt">
+        <div><div class="ct">Content Performance</div><div class="cs" style="margin-top:3px">All posts · Last 30 days · Sorted by reach</div></div>
+        <div class="ca" style="flex-wrap:wrap;gap:8px">
+          <div class="tfl">
+            <button class="fc active">All</button>
+            <button class="fc">▶ YouTube</button>
+            <button class="fc">📸 Instagram</button>
+            <button class="fc">🎵 TikTok</button>
+            <button class="fc">Video</button>
+            <button class="fc">Reels</button>
+          </div>
+          <div class="sbox"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Search content..."></div>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Post</th><th>Platform</th><th>Date</th><th>Reach</th><th>Likes</th><th>Comments</th><th>Shares</th><th>Saves</th><th>Eng. Rate</th><th>Score</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><div class="pc"><div class="pico" style="background:rgba(255,34,68,.1)">🎬</div><div><div class="pname">How to grow 10k in 30 days</div><div class="ptyp">Long-form video</div></div></div></td><td><span class="pill yt">▶ YouTube</span></td><td style="color:var(--text2)">May 16</td><td style="font-weight:600">248,441</td><td>14,332</td><td>892</td><td>3,211</td><td>—</td><td><div class="rbar"><div class="rbt"><div class="rbf" style="width:82%;background:var(--green)"></div></div><span style="font-size:12px;font-weight:600;color:var(--green)">8.2%</span></div></td><td><div class="sc h">A</div></td></tr>
+          <tr><td><div class="pc"><div class="pico" style="background:rgba(247,24,124,.1)">📸</div><div><div class="pname">BTS Reel: Studio Day</div><div class="ptyp">Reel · 0:42</div></div></div></td><td><span class="pill ig">📸 Instagram</span></td><td style="color:var(--text2)">May 14</td><td style="font-weight:600">184,200</td><td>22,100</td><td>1,244</td><td>5,670</td><td>8,200</td><td><div class="rbar"><div class="rbt"><div class="rbf" style="width:91%;background:var(--green)"></div></div><span style="font-size:12px;font-weight:600;color:var(--green)">9.1%</span></div></td><td><div class="sc h">A+</div></td></tr>
+          <tr><td><div class="pc"><div class="pico" style="background:rgba(110,231,245,.1)">🎵</div><div><div class="pname">Morning routine challenge</div><div class="ptyp">Short · 0:28</div></div></div></td><td><span class="pill tk">🎵 TikTok</span></td><td style="color:var(--text2)">May 12</td><td style="font-weight:600">122,800</td><td>9,860</td><td>432</td><td>8,001</td><td>—</td><td><div class="rbar"><div class="rbt"><div class="rbf" style="width:74%;background:var(--accent)"></div></div><span style="font-size:12px;font-weight:600;color:var(--accent)">7.4%</span></div></td><td><div class="sc m">B+</div></td></tr>
+          <tr><td><div class="pc"><div class="pico" style="background:rgba(29,155,240,.1)">💬</div><div><div class="pname">Thread: SMM mistakes to avoid</div><div class="ptyp">Thread · 12 tweets</div></div></div></td><td><span class="pill tw">✕ Twitter/X</span></td><td style="color:var(--text2)">May 10</td><td style="font-weight:600">67,400</td><td>3,120</td><td>278</td><td>1,890</td><td>—</td><td><div class="rbar"><div class="rbt"><div class="rbf" style="width:62%;background:var(--accent)"></div></div><span style="font-size:12px;font-weight:600;color:var(--accent)">6.2%</span></div></td><td><div class="sc m">B</div></td></tr>
+          <tr><td><div class="pc"><div class="pico" style="background:rgba(10,123,186,.1)">📋</div><div><div class="pname">Product launch announcement</div><div class="ptyp">Article</div></div></div></td><td><span class="pill li">in LinkedIn</span></td><td style="color:var(--text2)">May 8</td><td style="font-weight:600">41,200</td><td>2,340</td><td>188</td><td>412</td><td>—</td><td><div class="rbar"><div class="rbt"><div class="rbf" style="width:55%;background:var(--accent)"></div></div><span style="font-size:12px;font-weight:600;color:var(--accent)">5.5%</span></div></td><td><div class="sc m">B-</div></td></tr>
+          <tr><td><div class="pc"><div class="pico" style="background:rgba(45,124,245,.1)">📊</div><div><div class="pname">Community poll: fav feature</div><div class="ptyp">Poll · Image</div></div></div></td><td><span class="pill fb">f Facebook</span></td><td style="color:var(--text2)">May 7</td><td style="font-weight:600">28,900</td><td>1,780</td><td>644</td><td>238</td><td>—</td><td><div class="rbar"><div class="rbt"><div class="rbf" style="width:48%;background:var(--red)"></div></div><span style="font-size:12px;font-weight:600;color:var(--red)">4.8%</span></div></td><td><div class="sc l">C+</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /content -->
+
+  <div class="pfoot">
+    <div>© 2026 CliqueIQ · India's Social Media Intelligence Platform</div>
+    <div class="flinks"><a href="#">Privacy</a><a href="#">Help Center</a><a href="#">API Docs</a><a href="#">Status ●</a></div>
+  </div>
+</div>
+
+<script>
+  function swPt(el){document.querySelectorAll('.pt').forEach(t=>t.className=t.className.replace(/\s*active/g,''));el.classList.add('active')}
+  document.querySelectorAll('.dbtn').forEach(b=>b.addEventListener('click',function(){document.querySelectorAll('.dbtn').forEach(x=>x.classList.remove('active'));this.classList.add('active')}));
+  function chChip(el){el.closest('.ca').querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));el.classList.add('active')}
+  document.querySelectorAll('.fc').forEach(c=>c.addEventListener('click',function(){document.querySelectorAll('.fc').forEach(x=>x.classList.remove('active'));this.classList.add('active')}));
+  document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',function(){const p=this.closest('.ca');if(p){p.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));this.classList.add('active')}}));
+
+  Chart.defaults.font.family='DM Sans';
+  Chart.defaults.color='rgba(255,255,255,0.38)';
+
+  function spark(id,data,color){
+    const ctx=document.getElementById(id).getContext('2d');
+    const g=ctx.createLinearGradient(0,0,0,26);
+    g.addColorStop(0,color.replace('rgb','rgba').replace(')',',0.3)'));
+    g.addColorStop(1,color.replace('rgb','rgba').replace(')',',0)'));
+    new Chart(ctx,{type:'line',data:{labels:data.map((_,i)=>i),datasets:[{data,borderColor:color,borderWidth:1.8,fill:true,backgroundColor:g,pointRadius:0,tension:0.4}]},options:{plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},animation:{duration:900}}});
+  }
+  spark('sp1',[80,85,78,92,88,95,100,98,105,112,118],'rgb(108,99,255)');
+  spark('sp2',[60,70,65,80,75,90,85,95,100,110,120],'rgb(0,229,160)');
+  spark('sp3',[50,55,52,60,58,55,62,60,58,65,70],'rgb(247,24,124)');
+  spark('sp4',[30,45,40,55,50,65,60,75,70,85,90],'rgb(0,212,255)');
+  spark('sp5',[12,15,10,18,14,16,20,17,22,19,23],'rgb(255,34,68)');
+
+  const gCtx=document.getElementById('growthChart').getContext('2d');
+  const gL=['Apr 20','Apr 25','Apr 30','May 5','May 10','May 15','May 19'];
+  function mg(c,a,b){const g=c.createLinearGradient(0,0,0,250);g.addColorStop(0,a);g.addColorStop(1,b);return g}
+  new Chart(gCtx,{type:'line',data:{labels:gL,datasets:[
+    {label:'YouTube',data:[210000,218000,222000,228000,235000,242000,248000],borderColor:'#ff2244',backgroundColor:mg(gCtx,'rgba(255,34,68,0.14)','rgba(255,34,68,0)'),fill:true,tension:0.4,pointRadius:3,pointHoverRadius:7,borderWidth:2},
+    {label:'Instagram',data:[180000,185000,188000,192000,196000,200000,204000],borderColor:'#f7187c',backgroundColor:mg(gCtx,'rgba(247,24,124,0.1)','rgba(247,24,124,0)'),fill:true,tension:0.4,pointRadius:3,pointHoverRadius:7,borderWidth:2},
+    {label:'TikTok',data:[48000,49100,49400,49700,49900,50100,50300],borderColor:'#6ee7f5',backgroundColor:mg(gCtx,'rgba(110,231,245,0.07)','rgba(110,231,245,0)'),fill:true,tension:0.4,pointRadius:3,pointHoverRadius:7,borderWidth:2},
+    {label:'Twitter/X',data:[32000,32400,32700,33000,33200,33500,33800],borderColor:'#1d9bf0',backgroundColor:mg(gCtx,'rgba(29,155,240,0.06)','rgba(29,155,240,0)'),fill:true,tension:0.4,pointRadius:3,pointHoverRadius:7,borderWidth:2},
+    {label:'LinkedIn',data:[11200,11600,11900,12000,12200,12400,12400],borderColor:'#0a7bba',backgroundColor:mg(gCtx,'rgba(10,123,186,0.05)','rgba(10,123,186,0)'),fill:true,tension:0.4,pointRadius:3,pointHoverRadius:7,borderWidth:2},
+  ]},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#0f1224',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:11}},scales:{x:{ticks:{color:'rgba(255,255,255,0.33)',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'rgba(255,255,255,0.33)',font:{size:11},callback:v=>v>=1000?(v/1000)+'K':v},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  const plats=[
+    {n:'YouTube',p:34,c:'#ff2244',i:'▶'},
+    {n:'Instagram',p:28,c:'#f7187c',i:'📸'},
+    {n:'TikTok',p:14,c:'#6ee7f5',i:'🎵'},
+    {n:'Twitter/X',p:11,c:'#1d9bf0',i:'✕'},
+    {n:'LinkedIn',p:8,c:'#0a7bba',i:'in'},
+    {n:'Facebook',p:5,c:'#2d7cf5',i:'f'},
+  ];
+  new Chart(document.getElementById('donutChart').getContext('2d'),{type:'doughnut',data:{labels:plats.map(p=>p.n),datasets:[{data:plats.map(p=>p.p),backgroundColor:plats.map(p=>p.c),borderWidth:0,hoverOffset:7,borderRadius:3}]},options:{cutout:'72%',plugins:{legend:{display:false}},animation:{animateRotate:true,duration:1200}}});
+  const sl=document.getElementById('shList');
+  plats.forEach(p=>{sl.innerHTML+=`<div class="sh-i"><div class="sh-logo" style="background:${p.c}18">${p.i}</div><div class="sh-n">${p.n}</div><div class="sh-bw"><div class="sh-bf" style="width:0%;background:${p.c}" data-w="${p.p}"></div></div><div class="sh-p">${p.p}%</div></div>`});
+  setTimeout(()=>document.querySelectorAll('.sh-bf').forEach(f=>f.style.width=f.dataset.w+'%'),200);
+
+  new Chart(document.getElementById('engChart').getContext('2d'),{type:'bar',data:{labels:['Likes','Comments','Shares','Saves','Clicks','Reactions'],datasets:[
+    {label:'YouTube',data:[14332,892,3211,0,5440,0],backgroundColor:'rgba(255,34,68,0.72)',borderRadius:4,borderSkipped:false},
+    {label:'Instagram',data:[22100,1244,5670,8200,0,0],backgroundColor:'rgba(247,24,124,0.72)',borderRadius:4,borderSkipped:false},
+    {label:'TikTok',data:[9860,432,8001,0,0,0],backgroundColor:'rgba(110,231,245,0.65)',borderRadius:4,borderSkipped:false},
+    {label:'LinkedIn',data:[2340,188,412,0,1100,890],backgroundColor:'rgba(10,123,186,0.7)',borderRadius:4,borderSkipped:false},
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:'rgba(255,255,255,0.45)',boxWidth:10,font:{size:10}}},tooltip:{backgroundColor:'#0f1224',borderColor:'rgba(255,255,255,0.1)',borderWidth:1}},scales:{x:{ticks:{color:'rgba(255,255,255,0.33)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'rgba(255,255,255,0.33)',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  new Chart(document.getElementById('geoChart').getContext('2d'),{type:'bar',data:{labels:['🇮🇳 India','🇺🇸 USA','🇬🇧 UK','🇦🇪 UAE','🇨🇦 Canada'],datasets:[{data:[42,18,12,9,7],backgroundColor:['rgba(108,99,255,0.75)','rgba(108,99,255,0.55)','rgba(108,99,255,0.38)','rgba(108,99,255,0.25)','rgba(108,99,255,0.15)'],borderRadius:4,borderSkipped:false}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{color:'rgba(255,255,255,0.33)',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'rgba(255,255,255,0.42)',font:{size:11}},grid:{display:false}}}}});
+
+  new Chart(document.getElementById('radarChart').getContext('2d'),{type:'radar',data:{labels:['Engagement','Reach','Consistency','Content Quality','Audience Growth','Response Rate'],datasets:[
+    {label:'You',data:[87,74,80,92,78,70],borderColor:'rgba(108,99,255,0.9)',backgroundColor:'rgba(108,99,255,0.1)',pointBackgroundColor:'#6c63ff',borderWidth:2,pointRadius:4},
+    {label:'Competitor Beta',data:[92,80,85,88,82,65],borderColor:'rgba(0,212,255,0.65)',backgroundColor:'rgba(0,212,255,0.04)',pointBackgroundColor:'#00d4ff',borderWidth:1.5,pointRadius:3},
+    {label:'Competitor Alpha',data:[72,68,74,70,65,80],borderColor:'rgba(255,34,68,0.45)',backgroundColor:'rgba(255,34,68,0.03)',pointBackgroundColor:'#ff2244',borderWidth:1.5,pointRadius:3},
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:'rgba(255,255,255,0.45)',boxWidth:10,font:{size:10}}}},scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,0.07)'},angleLines:{color:'rgba(255,255,255,0.07)'},pointLabels:{color:'rgba(255,255,255,0.45)',font:{size:10}}}}}});
+
+  new Chart(document.getElementById('storyChart').getContext('2d'),{type:'line',data:{labels:['Week 1','Week 2','Week 3','Week 4'],datasets:[
+    {label:'IG Reels Views',data:[84000,102000,138000,184000],borderColor:'#f7187c',backgroundColor:'rgba(247,24,124,0.07)',fill:true,tension:0.5,borderWidth:2,pointRadius:4},
+    {label:'TikTok Views',data:[45000,62000,88000,122000],borderColor:'#6ee7f5',backgroundColor:'rgba(110,231,245,0.05)',fill:true,tension:0.5,borderWidth:2,pointRadius:4},
+    {label:'Story Completions',data:[12000,15400,19800,24100],borderColor:'rgba(108,99,255,0.8)',backgroundColor:'rgba(108,99,255,0.05)',fill:true,tension:0.5,borderWidth:2,pointRadius:4},
+  ]},options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'rgba(255,255,255,0.45)',boxWidth:10,font:{size:10}}},tooltip:{backgroundColor:'#0f1224',borderColor:'rgba(255,255,255,0.1)',borderWidth:1}},scales:{x:{ticks:{color:'rgba(255,255,255,0.33)',font:{size:11}},grid:{color:'rgba(255,255,255,0.04)'}},y:{ticks:{color:'rgba(255,255,255,0.33)',font:{size:11},callback:v=>v>=1000?(v/1000)+'K':v},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  // Heatmap
+  (function(){
+    const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const pat=[0.1,0.08,0.07,0.06,0.07,0.09,0.11,0.16,0.26,0.36,0.42,0.46,0.5,0.47,0.44,0.5,0.56,0.66,0.82,0.92,0.85,0.68,0.48,0.28];
+    const wb=[1,1,1,1,1,1.3,1.2];
+    const wrap=document.getElementById('heatWrap');
+    const hrRow=document.createElement('div');
+    hrRow.style.cssText='display:flex;padding-left:42px;gap:2px;margin-bottom:4px';
+    for(let h=0;h<24;h++){const d=document.createElement('div');d.style.cssText='flex:1;font-size:9px;color:#4a5170;text-align:center';d.textContent=h%6===0?h+'h':'';hrRow.appendChild(d)}
+    wrap.appendChild(hrRow);
+    days.forEach((day,di)=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:2px;margin-bottom:2px';
+      const lbl=document.createElement('div');
+      lbl.style.cssText='width:38px;font-size:10px;color:#4a5170;text-align:right;padding-right:6px;flex-shrink:0';
+      lbl.textContent=day;row.appendChild(lbl);
+      for(let h=0;h<24;h++){
+        const val=Math.min(1,pat[h]*wb[di]*(0.8+Math.random()*0.4));
+        const cell=document.createElement('div');
+        cell.style.cssText='flex:1;height:15px;border-radius:3px;cursor:pointer;transition:transform .15s,box-shadow .15s';
+        const alpha=0.07+val*0.87;
+        cell.style.background=`rgba(108,99,255,${alpha})`;
+        cell.title=`${day} ${h}:00 · Engagement Score: ${Math.round(val*100)}%`;
+        cell.onmouseenter=()=>{cell.style.transform='scale(1.45)';cell.style.boxShadow=`0 0 8px rgba(108,99,255,${alpha})`};
+        cell.onmouseleave=()=>{cell.style.transform='scale(1)';cell.style.boxShadow='none'};
+        row.appendChild(cell);
+      }
+      wrap.appendChild(row);
+    });
+    const leg=document.createElement('div');
+    leg.style.cssText='display:flex;align-items:center;gap:7px;margin-top:10px;font-size:10px;color:#4a5170';
+    leg.innerHTML='Low '+[0.08,0.25,0.45,0.65,0.87].map(v=>`<div style="width:20px;height:7px;border-radius:2px;background:rgba(108,99,255,${v})"></div>`).join('')+' High';
+    wrap.appendChild(leg);
+  })();
+</script>
+</body>
+</html>

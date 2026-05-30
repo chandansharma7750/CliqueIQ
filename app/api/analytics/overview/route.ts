@@ -73,6 +73,78 @@ async function fetchYouTubeStats(accessToken: string, savedMetadata: Record<stri
   return null
 }
 
+// Country code → flag + name map
+const COUNTRY_MAP: Record<string, string> = {
+  IN:"🇮🇳 India", US:"🇺🇸 USA", GB:"🇬🇧 UK", AE:"🇦🇪 UAE", CA:"🇨🇦 Canada",
+  AU:"🇦🇺 Australia", SG:"🇸🇬 Singapore", PK:"🇵🇰 Pakistan", BD:"🇧🇩 Bangladesh",
+  MY:"🇲🇾 Malaysia", ZA:"🇿🇦 South Africa", NZ:"🇳🇿 New Zealand", DE:"🇩🇪 Germany",
+  FR:"🇫🇷 France", NL:"🇳🇱 Netherlands", JP:"🇯🇵 Japan", BR:"🇧🇷 Brazil",
+  NG:"🇳🇬 Nigeria", KE:"🇰🇪 Kenya", SA:"🇸🇦 Saudi Arabia",
+}
+
+// Fetch age/gender split + top countries from YouTube Analytics API
+async function fetchYouTubeAudienceInsights(accessToken: string, days: number) {
+  try {
+    const endDate   = new Date().toISOString().split("T")[0]
+    const startDate = new Date(Date.now() - days * 86400000).toISOString().split("T")[0]
+    const base    = `https://youtubeanalytics.googleapis.com/v2/reports?ids=channel%3D%3DMINE&startDate=${startDate}&endDate=${endDate}`
+    const headers = { Authorization: `Bearer ${accessToken}` }
+
+    // Run both requests in parallel
+    const [agRes, coRes] = await Promise.all([
+      fetch(`${base}&metrics=viewerPercentage&dimensions=ageGroup,gender`, { headers }),
+      fetch(`${base}&metrics=views&dimensions=country&sort=-views&maxResults=8`, { headers }),
+    ])
+    const [agData, coData] = await Promise.all([agRes.json(), coRes.json()])
+
+    // ── Age + Gender ──────────────────────────────────────────────
+    const AGE_LABEL: Record<string, string> = {
+      "age13-17":"13–17","age18-24":"18–24","age25-34":"25–34",
+      "age35-44":"35–44","age45-54":"45–54","age55-64":"55–64","age65-":"65+",
+    }
+    const ageMap: Record<string, { female: number; male: number }> = {}
+    if (!agData.error && agData.rows) {
+      for (const [age, gender, pct] of agData.rows as [string, string, number][]) {
+        if (!ageMap[age]) ageMap[age] = { female: 0, male: 0 }
+        ageMap[age][gender as "female" | "male"] = Number(pct)
+      }
+    }
+    const ageGender = Object.entries(ageMap)
+      .sort((a, b) => Object.keys(AGE_LABEL).indexOf(a[0]) - Object.keys(AGE_LABEL).indexOf(b[0]))
+      .map(([key, v]) => ({ ageGroup: AGE_LABEL[key] || key, female: v.female, male: v.male, total: v.female + v.male }))
+
+    // Peak age group
+    const peakAgeEntry = ageGender.length > 0
+      ? ageGender.reduce((best, cur) => cur.total > best.total ? cur : best)
+      : null
+    const peakAge = peakAgeEntry?.ageGroup || null
+
+    // Overall gender split
+    let totalMale = 0, totalFemale = 0
+    ageGender.forEach(a => { totalMale += a.male; totalFemale += a.female })
+    const genderTotal = totalMale + totalFemale
+    const genderSplit = genderTotal > 0
+      ? { male: Math.round((totalMale / genderTotal) * 100), female: Math.round((totalFemale / genderTotal) * 100) }
+      : null
+
+    // ── Countries ─────────────────────────────────────────────────
+    const totalViews = (coData.rows || []).reduce((s: number, r: (string|number)[]) => s + Number(r[1]), 0) || 1
+    const topCountries = (coData.error || !coData.rows) ? [] :
+      (coData.rows as [string, number][]).map(([code, views]) => ({
+        name: COUNTRY_MAP[code] || `🌐 ${code}`,
+        views,
+        pct: Math.round((views / totalViews) * 100),
+      }))
+
+    // Return null only if BOTH calls failed
+    if (!agData.rows && !coData.rows) return null
+
+    return { ageGender, peakAge, genderSplit, topCountries }
+  } catch {
+    return null
+  }
+}
+
 // Fetch daily YouTube Analytics (views, likes, comments per day) — FREE for channel owner
 async function fetchYouTubeAnalytics(accessToken: string, days: number) {
   try {

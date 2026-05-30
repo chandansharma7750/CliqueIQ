@@ -1,21 +1,97 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { createClient } from "@/lib/supabase/server"
 
-export default async function SettingsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user!.id)
-    .single()
+interface SettingsData {
+  email: string
+  profile: { full_name?: string } | null
+  workspace: { name?: string; gst_number?: string } | null
+}
+
+export default function SettingsPage() {
+  const [data, setData] = useState<SettingsData | null>(null)
+  const [fullName, setFullName] = useState("")
+  const [workspaceName, setWorkspaceName] = useState("")
+  const [gstNumber, setGstNumber] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [savingWs, setSavingWs] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
+
+  const showToast = (msg: string, ok = true) => {
+    setToast({ msg, ok })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((d: SettingsData) => {
+        setData(d)
+        setFullName(d.profile?.full_name ?? "")
+        setWorkspaceName(d.workspace?.name ?? "")
+        setGstNumber(d.workspace?.gst_number ?? "")
+      })
+      .catch(() => showToast("Failed to load settings", false))
+  }, [])
+
+  const saveProfile = async () => {
+    setSaving(true)
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full_name: fullName }),
+      })
+      if (!res.ok) throw new Error()
+      showToast("Profile saved!")
+    } catch {
+      showToast("Failed to save profile", false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const saveWorkspace = async () => {
+    setSavingWs(true)
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspace_name: workspaceName, gst_number: gstNumber }),
+      })
+      if (!res.ok) throw new Error()
+      showToast("Workspace saved!")
+    } catch {
+      showToast("Failed to save workspace", false)
+    } finally {
+      setSavingWs(false)
+    }
+  }
+
+  const initials =
+    fullName?.slice(0, 2)?.toUpperCase() ||
+    data?.email?.slice(0, 2)?.toUpperCase() ||
+    "U"
 
   return (
     <div className="max-w-2xl space-y-6">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg text-sm font-medium shadow-lg transition-all ${
+            toast.ok
+              ? "bg-green-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+        >
+          {toast.msg}
+        </div>
+      )}
+
       <div>
         <h2 className="text-2xl font-bold text-slate-900">Settings</h2>
         <p className="text-slate-500 mt-1">Manage your account and workspace settings</p>
@@ -30,21 +106,32 @@ export default async function SettingsPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xl font-bold">
-              {profile?.full_name?.slice(0, 2)?.toUpperCase() ?? user?.email?.slice(0, 2)?.toUpperCase() ?? "U"}
+              {initials}
             </div>
-            <Button variant="outline" size="sm">Change Avatar</Button>
           </div>
           <div className="grid gap-3">
             <div>
               <Label>Full Name</Label>
-              <Input defaultValue={profile?.full_name ?? ""} placeholder="Your name" className="mt-1" />
+              <Input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Your name"
+                className="mt-1"
+              />
             </div>
             <div>
               <Label>Email</Label>
-              <Input defaultValue={user?.email ?? ""} disabled className="mt-1 bg-slate-50" />
+              <Input
+                value={data?.email ?? ""}
+                disabled
+                className="mt-1 bg-slate-50"
+              />
+              <p className="text-xs text-slate-400 mt-1">Email cannot be changed here</p>
             </div>
           </div>
-          <Button>Save Changes</Button>
+          <Button onClick={saveProfile} disabled={saving}>
+            {saving ? "Saving…" : "Save Changes"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -57,14 +144,26 @@ export default async function SettingsPage() {
         <CardContent className="space-y-4">
           <div>
             <Label>Workspace Name</Label>
-            <Input placeholder="My Agency" className="mt-1" />
+            <Input
+              value={workspaceName}
+              onChange={(e) => setWorkspaceName(e.target.value)}
+              placeholder="My Agency"
+              className="mt-1"
+            />
           </div>
           <div>
             <Label>GST Number</Label>
-            <Input placeholder="22AAAAA0000A1Z5" className="mt-1" />
+            <Input
+              value={gstNumber}
+              onChange={(e) => setGstNumber(e.target.value)}
+              placeholder="22AAAAA0000A1Z5"
+              className="mt-1"
+            />
             <p className="text-xs text-slate-500 mt-1">Used for auto-generating GST invoices</p>
           </div>
-          <Button>Save Workspace</Button>
+          <Button onClick={saveWorkspace} disabled={savingWs}>
+            {savingWs ? "Saving…" : "Save Workspace"}
+          </Button>
         </CardContent>
       </Card>
 

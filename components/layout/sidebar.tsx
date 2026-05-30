@@ -25,13 +25,13 @@ const navItems = [
   { href: "/captions", label: "AI Captions", icon: Sparkles },
   { href: "/calendar", label: "Festival Calendar", icon: CalendarDays },
   { href: "/connect", label: "Connect Accounts", icon: Link2 },
+  { href: "/reports", label: "PDF Reports", icon: FileText },
   { href: "/billing", label: "Billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
 const comingSoon = [
   { href: "/whatsapp", label: "WhatsApp Analytics", icon: MessageCircle, badge: "Soon" },
-  { href: "/reports", label: "PDF Reports", icon: FileText, badge: "Soon" },
 ]
 
 export function Sidebar() {

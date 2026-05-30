@@ -31,7 +31,7 @@ const PLATFORM_META: Omit<Platform, "status" | "accountName" | "accountHandle">[
   { id: "instagram", name: "Instagram", icon: <FaInstagram className="h-6 w-6" />, color: "#e1306c", bgColor: "#fdf2f8", description: "Schedule posts, Stories, and Reels. Track reach and engagement." },
   { id: "facebook", name: "Facebook", icon: <FaFacebook className="h-6 w-6" />, color: "#1877f2", bgColor: "#eff6ff", description: "Post to Pages and Groups. Track impressions and reactions." },
   { id: "youtube", name: "YouTube", icon: <FaYoutube className="h-6 w-6" />, color: "#ff0000", bgColor: "#fff1f2", description: "Connect your channel to track subscribers, views, and video count." },
-  { id: "linkedin", name: "LinkedIn", icon: <FaLinkedin className="h-6 w-6" />, color: "#0a66c2", bgColor: "#eff6ff", description: "Share professional content to your Company Page or Profile.", comingSoon: true },
+  { id: "linkedin", name: "LinkedIn", icon: <FaLinkedin className="h-6 w-6" />, color: "#0a66c2", bgColor: "#eff6ff", description: "Share professional content to your Company Page or Profile." },
   { id: "whatsapp", name: "WhatsApp Business", icon: <MessageCircle className="h-6 w-6" />, color: "#25d366", bgColor: "#f0fdf4", description: "Track broadcast campaigns, open rates, and reply rates — India's biggest USP.", comingSoon: true },
 ]
 
@@ -39,6 +39,7 @@ const OAUTH_URLS: Record<string, string> = {
   instagram: `/api/auth/meta/connect?platform=instagram`,
   facebook: `/api/auth/meta/connect?platform=facebook`,
   youtube: `/api/auth/youtube/connect`,
+  linkedin: `/api/auth/linkedin/connect`,
 }
 
 export default function ConnectPage() {
